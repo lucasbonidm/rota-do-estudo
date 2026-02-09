@@ -2,7 +2,9 @@
   "manifest_version": 3,
   "name": "Rota do Estudo",
   "version": "1.0.0",
-  "description": "Adicione videos e playlists do YouTube à Rota do Estudo",
+  "description": "Adicione vídeos e playlists do YouTube à sua Rota do Estudo com um clique",
+  "author": "Seu Nome",
+  "homepage_url": "https://github.com/seu-usuario/rota-do-estudo",
   "permissions": [
     "activeTab",
     "scripting",
@@ -11,12 +13,7 @@
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
-    "*://youtube.com/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*",
-    "*://*.vercel.app/*",
-    "*://*.netlify.app/*",
-    "*://*.github.io/*"
+    "*://youtube.com/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",

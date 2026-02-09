@@ -115,6 +115,8 @@
     );
 
     const lessons = [];
+    const seenVideoIds = new Set();
+
     videoElements.forEach(el => {
       const title = el.querySelector('#video-title')?.innerText.trim();
       if (!title) return;
@@ -122,7 +124,12 @@
       const href = el.querySelector('a#thumbnail, a#wc-endpoint, a#video-title')?.getAttribute('href');
       const videoIdMatch = href?.match(/[?&]v=([\w-]{11})/);
       const videoId = videoIdMatch ? videoIdMatch[1] : '';
-      const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
+
+      // Pular se ja vimos este videoId (evita duplicatas)
+      if (!videoId || seenVideoIds.has(videoId)) return;
+
+      seenVideoIds.add(videoId);
+      const url = `https://www.youtube.com/watch?v=${videoId}`;
 
       lessons.push({ title, url, videoId });
     });

@@ -14,42 +14,36 @@
   <script>
     function drawIcon(canvas, size) {
       const ctx = canvas.getContext('2d');
-      const s = size;
 
-      // Fundo redondo
-      ctx.fillStyle = '#1a1a2e';
-      ctx.beginPath();
-      ctx.arc(s/2, s/2, s/2, 0, Math.PI * 2);
-      ctx.fill();
+      // Desenha o SVG no canvas via Image
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
+        <rect width="32" height="32" rx="6" fill="hsl(221.2, 83.2%, 53.3%)"/>
+        <g transform="translate(4, 4)" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
+          <path d="M22 10v6"/>
+          <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>
+        </g>
+      </svg>`;
 
-      // Borda
-      ctx.strokeStyle = '#e94560';
-      ctx.lineWidth = Math.max(1, s * 0.06);
-      ctx.beginPath();
-      ctx.arc(s/2, s/2, s/2 - ctx.lineWidth/2, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Play triangle
-      ctx.fillStyle = '#e94560';
-      ctx.beginPath();
-      const cx = s * 0.55;
-      const cy = s / 2;
-      const r = s * 0.25;
-      ctx.moveTo(cx - r * 0.5, cy - r);
-      ctx.lineTo(cx + r * 0.7, cy);
-      ctx.lineTo(cx - r * 0.5, cy + r);
-      ctx.closePath();
-      ctx.fill();
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+        // Atualiza o link de download
+        const dlId = 'dl' + size;
+        document.getElementById(dlId).href = canvas.toDataURL('image/png');
+      };
+      img.src = url;
     }
 
     [
-      { canvas: 'c16', size: 16, dl: 'dl16' },
-      { canvas: 'c48', size: 48, dl: 'dl48' },
-      { canvas: 'c128', size: 128, dl: 'dl128' }
-    ].forEach(({ canvas, size, dl }) => {
-      const c = document.getElementById(canvas);
-      drawIcon(c, size);
-      document.getElementById(dl).href = c.toDataURL('image/png');
+      { canvas: 'c16', size: 16 },
+      { canvas: 'c48', size: 48 },
+      { canvas: 'c128', size: 128 }
+    ].forEach(({ canvas, size }) => {
+      drawIcon(document.getElementById(canvas), size);
     });
   </script>
 </body>
