@@ -18,12 +18,12 @@ Se você ainda não tem os arquivos:
 
 ### **Opção A: Clonar pelo Git** (recomendado)
 ```bash
-git clone https://github.com/lucasbonidm/navegador-curso.git
-cd navegador-curso
+git clone https://github.com/lucasbonidm/rota-do-estudo.git
+cd rota-do-estudo
 ```
 
 ### **Opção B: Baixar como ZIP**
-1. Acesse: [github.com/lucasbonidm/navegador-curso](https://github.com)
+1. Acesse: [github.com/lucasbonidm/rota-do-estudo](https://github.com/lucasbonidm/rota-do-estudo)
 2. Clique no botão verde **"Code"**
 3. Selecione **"Download ZIP"**
 4. Extraia a pasta em um local de fácil acesso (ex: Desktop)
@@ -83,10 +83,10 @@ Clique em **"Carregar extensão sem empacotar"**.
 
 Uma janela de seleção de pasta vai abrir.
 
-Navegue até seu projeto **navegador-curso** e selecione a pasta **`extensao/`**:
+Navegue até seu projeto **rota-do-estudo** e selecione a pasta **`extensao/`**:
 
 ```
-navegador-curso/
+rota-do-estudo/
 ├── extensao/          ← Selecione ESTA pasta
 │   ├── manifest.json
 │   ├── background.js
@@ -226,7 +226,7 @@ extensao/
    - Clique em **"Página de fundo"** (abre o console)
 
 2. Procure por erros em vermelho
-3. Se tiver erro, copie e reporte em: [Issues do GitHub](https://github.com/lucasbonidm/navegador-curso/issues)
+3. Se tiver erro, copie e reporte em: [Issues do GitHub](https://github.com/lucasbonidm/rota-do-estudo/issues)
 
 ---
 
