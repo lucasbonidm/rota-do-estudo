@@ -1,0 +1,648 @@
+# PRD - Extensao Chrome: Rota do Estudo
+
+## Visao Geral
+
+Extensao do Chrome que permite ao usuario adicionar videos e playlists do YouTube
+ao Rota do Estudo com poucos cliques, sem precisar copiar/colar JSON manualmente.
+
+A extensao detecta automaticamente se o usuario esta em um video ou playlist do YouTube,
+extrai os dados relevantes, e oferece acoes contextuais para enviar ao app.
+
+---
+
+## Arquitetura
+
+### Componentes da Extensao
+
+```
+extensao/
+  manifest.json          # Manifest V3 - config, permissoes, icons
+  popup/
+    popup.html           # Interface principal da extensao
+    popup.css            # Estilos do popup
+    popup.js             # Logica do popup (UI, acoes do usuario)
+  background.js          # Service worker - gerencia comunicacao entre popup e content scripts
+  content/
+    youtube.js           # Content script injetado no YouTube - extrai dados da pagina
+    app.js               # Content script injetado no app Vercel - escreve no localStorage
+  icons/
+    icon16.png
+    icon48.png
+    icon128.png
+```
+
+### Fluxo de Comunicacao
+
+```
+[YouTube Tab]                [Extension Popup]              [App Tab (Vercel)]
+     |                              |                              |
+     |  1. content script           |                              |
+     |     extrai dados             |                              |
+     |------ dados do video ------->|                              |
+     |                              |                              |
+     |                    2. usuario escolhe acao                   |
+     |                    (criar curso, add modulo, etc)            |
+     |                              |                              |
+     |                              |--- 3. envia dados via ------->|
+     |                              |      chrome.tabs.sendMessage  |
+     |                              |                              |
+     |                              |            4. content script  |
+     |                              |               escreve no      |
+     |                              |               localStorage    |
+     |                              |                              |
+     |                              |<-- 5. confirmacao ------------|
+     |                              |                              |
+     |                    6. mostra feedback ao usuario             |
+```
+
+### Permissoes Necessarias (manifest.json)
+
+- `activeTab` - acessar aba ativa (YouTube)
+- `scripting` - injetar content scripts
+- `storage` - chrome.storage para config da extensao (URL do app)
+- Host permissions: `*://*.youtube.com/*`, `*://youtube.com/*`, URL do app na Vercel
+
+---
+
+## Deteccao de Contexto
+
+A extensao detecta automaticamente o tipo de pagina do YouTube:
+
+### Pagina de Video Individual
+- URL match: `youtube.com/watch?v=...`
+- Dados extraidos:
+  - Titulo do video (`document.querySelector('h1.ytd-watch-metadata yt-formatted-string')`)
+  - URL do video (window.location.href, limpo sem parametros extras)
+  - Video ID (extraido da URL via regex)
+  - Thumbnail (construida a partir do videoId)
+
+### Pagina de Playlist
+- URL match: `youtube.com/playlist?list=...` ou `youtube.com/watch?v=...&list=...`
+- Dados extraidos:
+  - Titulo da playlist
+  - Lista de todos os videos (titulo + URL + videoId de cada um)
+  - Total de videos
+
+### Pagina Sem Contexto
+- Qualquer outra pagina do YouTube ou fora do YouTube
+- Popup mostra mensagem: "Abra um video ou playlist no YouTube para usar a extensao"
+
+---
+
+## Interface do Popup
+
+### Estado: Fora do YouTube
+```
++-----------------------------------+
+|  Rota do Estudo              |
+|-----------------------------------|
+|                                   |
+|  Abra um video ou playlist no     |
+|  YouTube para comecar.            |
+|                                   |
+|  [Abrir App]                      |
++-----------------------------------+
+```
+
+### Estado: Video Individual Detectado
+```
++-----------------------------------+
+|  Rota do Estudo              |
+|-----------------------------------|
+|  VIDEO DETECTADO                  |
+|  "Titulo do Video Aqui"           |
+|-----------------------------------|
+|                                   |
+|  O que deseja fazer?              |
+|                                   |
+|  [Criar novo curso com este video]|
+|                                   |
+|  [Adicionar a um curso existente] |
+|    > Dropdown: selecionar curso   |
+|    > Dropdown: selecionar modulo  |
+|    > [Confirmar]                  |
+|                                   |
+|  [Abrir App]                      |
++-----------------------------------+
+```
+
+### Estado: Playlist Detectada
+```
++-----------------------------------+
+|  Rota do Estudo              |
+|-----------------------------------|
+|  PLAYLIST DETECTADA               |
+|  "Titulo da Playlist"             |
+|  42 videos encontrados            |
+|-----------------------------------|
+|                                   |
+|  O que deseja fazer?              |
+|                                   |
+|  [Criar novo curso com playlist]  |
+|                                   |
+|  [Adicionar como modulo]          |
+|    > Dropdown: selecionar curso   |
+|    > [Confirmar]                  |
+|                                   |
+|  [Abrir App]                      |
++-----------------------------------+
+```
+
+### Estado: Feedback (apos acao)
+```
++-----------------------------------+
+|  Rota do Estudo              |
+|-----------------------------------|
+|                                   |
+|  Curso criado com sucesso!        |
+|  "Meu Curso" - 42 aulas          |
+|                                   |
+|  [Abrir no App]   [Fechar]       |
++-----------------------------------+
+```
+
+---
+
+## Acoes Disponiveis
+
+### 1. Criar Novo Curso (a partir de video)
+- **Contexto:** Video individual
+- **Fluxo:**
+  1. Usuario clica "Criar novo curso com este video"
+  2. Popup mostra campo para nome do curso (pre-preenchido com titulo do video)
+  3. Usuario confirma
+  4. Extensao cria curso com 1 modulo ("Geral") contendo 1 aula
+- **Dados enviados ao app:**
+  ```json
+  {
+    "action": "createCourse",
+    "data": {
+      "title": "Nome do Curso",
+      "modules": [{
+        "title": "Geral",
+        "description": "",
+        "lessons": [{
+          "title": "Titulo do Video",
+          "url": "https://www.youtube.com/watch?v=...",
+          "videoId": "..."
+        }]
+      }]
+    }
+  }
+  ```
+
+### 2. Criar Novo Curso (a partir de playlist)
+- **Contexto:** Playlist
+- **Fluxo:**
+  1. Usuario clica "Criar novo curso com playlist"
+  2. Popup mostra campo para nome do curso (pre-preenchido com titulo da playlist)
+  3. Popup pergunta: criar como modulo unico ou detectar modulos automaticamente?
+     - **Modulo unico:** Todos os videos em 1 modulo
+     - **Detectar modulos:** Usa mesma logica do script atual (regex `/^modulo\s*\d+/i`)
+  4. Usuario confirma
+  5. Extensao cria curso completo
+- **Dados enviados ao app:**
+  ```json
+  {
+    "action": "createCourse",
+    "data": {
+      "title": "Nome do Curso",
+      "modules": [
+        {
+          "title": "Modulo 1",
+          "description": "",
+          "lessons": [
+            { "title": "...", "url": "...", "videoId": "..." },
+            { "title": "...", "url": "...", "videoId": "..." }
+          ]
+        }
+      ]
+    }
+  }
+  ```
+
+### 3. Adicionar Video a Curso Existente
+- **Contexto:** Video individual
+- **Fluxo:**
+  1. Usuario clica "Adicionar a um curso existente"
+  2. Popup carrega lista de cursos do app (via content script lendo localStorage)
+  3. Usuario seleciona curso
+  4. Popup carrega modulos do curso selecionado
+  5. Usuario seleciona modulo
+  6. Usuario confirma
+  7. Extensao adiciona aula ao modulo escolhido
+- **Dados enviados ao app:**
+  ```json
+  {
+    "action": "addLesson",
+    "data": {
+      "courseId": "course_...",
+      "moduleId": "mod_...",
+      "title": "Titulo do Video",
+      "url": "https://www.youtube.com/watch?v=...",
+      "videoId": "..."
+    }
+  }
+  ```
+
+### 4. Adicionar Playlist como Modulo
+- **Contexto:** Playlist
+- **Fluxo:**
+  1. Usuario clica "Adicionar como modulo"
+  2. Popup carrega lista de cursos do app
+  3. Usuario seleciona curso de destino
+  4. Popup mostra campo para nome do modulo (pre-preenchido com titulo da playlist)
+  5. Usuario confirma
+  6. Extensao importa playlist como novo modulo no curso
+- **Dados enviados ao app:**
+  ```json
+  {
+    "action": "importModule",
+    "data": {
+      "courseId": "course_...",
+      "module": {
+        "title": "Nome do Modulo",
+        "description": "",
+        "lessons": [
+          { "title": "...", "url": "...", "videoId": "..." }
+        ]
+      }
+    }
+  }
+  ```
+
+---
+
+## Comunicacao com o App
+
+### Estrategia: Content Script no Dominio do App
+
+A extensao injeta um content script na aba do app (Vercel) para ler/escrever
+no localStorage diretamente. Isso garante compatibilidade total com o Store existente.
+
+### Leitura de Dados (cursos existentes)
+
+O content script no app expoe os dados via `chrome.runtime.sendMessage`:
+
+```javascript
+// content/app.js - injetado na pagina do app
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'GET_COURSES') {
+    const index = localStorage.getItem('courses_index');
+    sendResponse({ courses: JSON.parse(index || '[]') });
+  }
+
+  if (msg.type === 'GET_COURSE') {
+    const data = localStorage.getItem(`course_${msg.courseId}`);
+    sendResponse({ course: JSON.parse(data || 'null') });
+  }
+});
+```
+
+### Escrita de Dados
+
+O content script executa as operacoes no localStorage seguindo a mesma logica
+do Store.js do app. Apos a escrita, dispara um evento customizado para que o app
+atualize a UI se estiver aberto:
+
+```javascript
+// Apos escrever no localStorage:
+window.dispatchEvent(new CustomEvent('course-data-updated', {
+  detail: { action: 'createCourse', courseId: '...' }
+}));
+```
+
+### Caso: App Nao Esta Aberto
+
+Se o app nao estiver aberto em nenhuma aba:
+1. Extensao abre nova aba com o app
+2. Aguarda content script carregar
+3. Executa a operacao
+4. Opcionalmente redireciona para o curso criado
+
+### Configuracao da URL do App
+
+Na primeira utilizacao (ou via opcoes da extensao), o usuario informa a URL do app:
+- Valor padrao: URL da Vercel (definido no manifest/config)
+- Salvo em `chrome.storage.sync` para sincronizar entre dispositivos
+- Botao "Configurar URL" acessivel no popup
+
+---
+
+## Extracao de Dados do YouTube
+
+### Content Script: youtube.js
+
+Injetado em paginas do YouTube para extrair dados.
+
+#### Extrair Video Individual
+```javascript
+function extractVideoData() {
+  const url = window.location.href;
+  const videoIdMatch = url.match(/[?&]v=([\w-]{11})/);
+  const videoId = videoIdMatch ? videoIdMatch[1] : '';
+
+  const title = document.querySelector(
+    'h1.ytd-watch-metadata yt-formatted-string'
+  )?.innerText.trim() || document.title.replace(' - YouTube', '').trim();
+
+  const cleanUrl = videoId
+    ? `https://www.youtube.com/watch?v=${videoId}`
+    : url.split('&')[0];
+
+  return {
+    type: 'video',
+    title,
+    url: cleanUrl,
+    videoId
+  };
+}
+```
+
+#### Extrair Playlist
+```javascript
+function extractPlaylistData() {
+  const playlistTitle = document.querySelector(
+    'yt-formatted-string.ytd-playlist-header-renderer'
+  )?.innerText.trim()
+    || document.querySelector(
+      'ytd-playlist-panel-renderer yt-formatted-string.title'
+    )?.innerText.trim()
+    || 'Playlist';
+
+  const videoElements = document.querySelectorAll(
+    'ytd-playlist-video-renderer, ytd-playlist-panel-video-renderer'
+  );
+
+  const lessons = [];
+  videoElements.forEach(el => {
+    const title = el.querySelector('#video-title')?.innerText.trim();
+    if (!title) return;
+
+    const href = el.querySelector('a#thumbnail, a#wc-endpoint')?.getAttribute('href');
+    const videoIdMatch = href?.match(/[?&]v=([\w-]{11})/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : '';
+    const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
+
+    lessons.push({ title, url, videoId });
+  });
+
+  return {
+    type: 'playlist',
+    title: playlistTitle,
+    totalVideos: lessons.length,
+    lessons
+  };
+}
+```
+
+#### Deteccao Automatica de Modulos (para playlists)
+Reutiliza a mesma logica do script de import existente no app:
+```javascript
+function splitIntoModules(lessons, playlistTitle) {
+  const modules = [];
+  let currentModule = null;
+
+  lessons.forEach(lesson => {
+    const isModuleHeader = /^m[oó]dulo\s*\d+/i.test(lesson.title);
+
+    if (isModuleHeader) {
+      currentModule = {
+        title: lesson.title,
+        description: '',
+        lessons: []
+      };
+      modules.push(currentModule);
+    } else {
+      if (!currentModule) {
+        currentModule = {
+          title: playlistTitle,
+          description: '',
+          lessons: []
+        };
+        modules.push(currentModule);
+      }
+      currentModule.lessons.push(lesson);
+    }
+  });
+
+  return modules;
+}
+```
+
+---
+
+## Tratamento de Scroll em Playlists
+
+Playlists grandes no YouTube usam lazy loading - os videos so carregam conforme
+o usuario rola a pagina. A extensao precisa lidar com isso:
+
+### Estrategia: Scroll Automatico
+1. Ao detectar playlist, verificar se todos os videos estao carregados
+2. Comparar contagem visivel vs total indicado pelo YouTube
+3. Se faltar videos, fazer scroll automatico ate o final
+4. Mostrar progresso no popup: "Carregando videos... 45/120"
+5. Timeout de seguranca: maximo 30 segundos de scroll
+
+```javascript
+async function scrollToLoadAll() {
+  const container = document.querySelector('ytd-playlist-video-list-renderer');
+  if (!container) return;
+
+  let previousCount = 0;
+  let attempts = 0;
+
+  while (attempts < 50) {
+    const videos = document.querySelectorAll('ytd-playlist-video-renderer');
+    if (videos.length === previousCount) {
+      attempts++;
+      if (attempts >= 3) break; // 3 tentativas sem novos videos = fim
+    } else {
+      attempts = 0;
+      previousCount = videos.length;
+    }
+
+    videos[videos.length - 1]?.scrollIntoView();
+    await new Promise(r => setTimeout(r, 500));
+  }
+}
+```
+
+### Alternativa: Extrair apenas os visíveis
+- Botao "Extrair videos visiveis (X de Y)"
+- Usuario pode rolar manualmente e clicar novamente
+- Menos magico, mas mais previsivel
+
+---
+
+## Manifest V3
+
+```json
+{
+  "manifest_version": 3,
+  "name": "Rota do Estudo",
+  "version": "1.0.0",
+  "description": "Adicione videos e playlists do YouTube ao Rota do Estudo",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "APP_URL_AQUI/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content/youtube.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["APP_URL_AQUI/*"],
+      "js": ["content/app.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
+```
+
+---
+
+## Adaptacao Necessaria no App Existente
+
+O app precisa de uma pequena adaptacao para reagir a mudancas feitas pela extensao:
+
+### Listener de Evento Customizado (app.js)
+```javascript
+// Escuta mudancas feitas pela extensao no localStorage
+window.addEventListener('course-data-updated', (e) => {
+  const { action, courseId } = e.detail;
+
+  // Se estiver na home, re-renderizar grid
+  if (Router.currentView === 'home-view') {
+    HomeView.renderCourseGrid();
+  }
+
+  // Se estiver no curso afetado, recarregar dados
+  if (Router.currentView === 'course-view' && CourseView.state.courseId === courseId) {
+    CourseView.state.courseData = Store.getCourse(courseId);
+    CourseView.renderModules();
+    CourseView.renderLessons();
+    CourseView.updateProgressBar();
+  }
+});
+```
+
+### Listener de storage (alternativa cross-tab)
+```javascript
+// Detecta mudancas no localStorage feitas por outras abas/extensao
+window.addEventListener('storage', (e) => {
+  if (e.key === 'courses_index' || e.key?.startsWith('course_')) {
+    // Re-renderizar view atual
+  }
+});
+```
+
+---
+
+## Fluxo de Primeira Configuracao
+
+1. Usuario instala a extensao
+2. Clica no icone pela primeira vez
+3. Popup mostra tela de boas-vindas:
+   ```
+   Bem-vindo ao Rota do Estudo!
+   Informe a URL do seu app:
+   [https://seu-app.vercel.app  ]
+   [Salvar e Comecar]
+   ```
+4. URL salva em `chrome.storage.sync`
+5. Proximas vezes, popup ja abre com a interface normal
+
+---
+
+## Compatibilidade com Store.js
+
+A extensao replica a logica critica do Store para escrever no localStorage:
+
+### Funcoes Replicadas no content/app.js
+- `generateId(prefix)` - mesma logica: `${prefix}_${Date.now()}_${random}`
+- `parseVideoId(url)` - mesmo regex
+- `getThumbnailUrl(videoId)` - mesma template
+- Leitura/escrita de `courses_index` e `course_${id}`
+- Calculo de progresso para sincronizar o index
+
+Isso garante que os dados escritos pela extensao sao 100% compativeis com o app.
+
+---
+
+## Estados de Erro
+
+| Cenario | Mensagem | Acao |
+|---------|----------|------|
+| Nao esta no YouTube | "Abra um video ou playlist no YouTube" | Mostrar botao "Abrir App" |
+| App nao configurado | "Configure a URL do seu app primeiro" | Mostrar campo de URL |
+| App nao esta aberto | "Abrindo o app..." | Abrir aba automaticamente |
+| Nenhum curso existe | "Nenhum curso encontrado" | Mostrar apenas opcao "Criar novo curso" |
+| Playlist vazia | "Nenhum video encontrado na playlist" | Orientar usuario a rolar a pagina |
+| Falha ao salvar | "Erro ao salvar. Tente novamente" | Botao de retry |
+| Playlist muito grande | "Carregando videos... X de Y" | Progress bar + botao cancelar |
+
+---
+
+## Prioridades de Implementacao
+
+### Fase 1 - MVP
+- [x] Manifest V3 basico
+- [ ] Deteccao de video individual
+- [ ] Deteccao de playlist (videos ja carregados)
+- [ ] Popup com acoes contextuais
+- [ ] Criar novo curso (video ou playlist)
+- [ ] Content script no app para escrita no localStorage
+- [ ] Tela de configuracao (URL do app)
+- [ ] Feedback visual de sucesso/erro
+
+### Fase 2 - Cursos Existentes
+- [ ] Carregar lista de cursos existentes no popup
+- [ ] Adicionar video a curso/modulo existente
+- [ ] Adicionar playlist como modulo em curso existente
+- [ ] Dropdown com busca para selecionar curso/modulo
+
+### Fase 3 - Polish
+- [ ] Scroll automatico para playlists grandes
+- [ ] Deteccao automatica de modulos em playlists
+- [ ] Adaptacao do app para reagir a mudancas da extensao (evento storage)
+- [ ] Icones personalizados da extensao
+- [ ] Animacoes e transicoes no popup
+- [ ] Atalho de teclado para abrir popup
+
+---
+
+## Resumo Tecnico
+
+| Item | Detalhe |
+|------|---------|
+| Manifest | V3 (obrigatorio para novas extensoes) |
+| Storage | localStorage do app (via content script) |
+| Comunicacao | chrome.runtime.sendMessage + chrome.tabs.sendMessage |
+| Compatibilidade | Replica logica do Store.js para escrita |
+| YouTube API | Nao usa - extrai dados diretamente do DOM |
+| Permissoes | activeTab, scripting, storage + host_permissions |
+| Tamanho estimado | ~8-10 arquivos, ~600-800 linhas total |
