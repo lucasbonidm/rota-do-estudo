@@ -169,6 +169,30 @@ const HomeView = {
 
         newCourseBtn.onclick = () => this._openModal();
         if (emptyStateBtn) emptyStateBtn.onclick = () => this._openModal();
+
+        document.getElementById('exportAllBtn').onclick = () => { this._closeSettingsMenu(); this._handleExportAll(); };
+        document.getElementById('importAllBtn').onclick = () => { this._closeSettingsMenu(); this._handleImportAll(); };
+
+        // Settings dropdown
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsMenu = document.getElementById('settingsMenu');
+        settingsToggle.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = settingsMenu.classList.toggle('open');
+            settingsToggle.setAttribute('aria-expanded', isOpen);
+        };
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#settingsDropdown')) {
+                this._closeSettingsMenu();
+            }
+        });
+    },
+
+    _closeSettingsMenu() {
+        const menu = document.getElementById('settingsMenu');
+        const toggle = document.getElementById('settingsToggle');
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
     },
 
     // ============ MODAL ============
@@ -312,5 +336,50 @@ const HomeView = {
                 w.document.write(`<pre>${json}</pre>`);
             }
         });
+    },
+
+    _handleExportAll() {
+        const data = Store.exportAll();
+        if (!data.courses.length) {
+            alert('Nenhum curso para exportar.');
+            return;
+        }
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const date = new Date().toISOString().slice(0, 10);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rota-do-estudo-backup-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    _handleImportAll() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (!data.courses || !Array.isArray(data.courses)) {
+                        throw new Error('Arquivo invalido: esperado um backup com "courses".');
+                    }
+                    const count = Store.importAll(data);
+                    alert(`${count} curso(s) importado(s) com sucesso!`);
+                    this.renderCourseGrid();
+                } catch (err) {
+                    alert(`Erro ao importar: ${err.message}`);
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
     }
 };

@@ -44,6 +44,25 @@ Pronto! Seu curso foi criado com todos os vídeos organizados em módulos.
 
 ---
 
+## Exportar e importar backup
+
+Você pode exportar todos os seus cursos, módulos, aulas e progresso em um único arquivo JSON. Isso permite transferir seus dados para outro navegador ou dispositivo.
+
+### Exportar
+
+1. Na tela inicial, clique no ícone de **engrenagem** no canto superior direito
+2. Clique em **"Exportar"**
+3. Um arquivo `rota-do-estudo-backup-YYYY-MM-DD.json` será baixado no seu computador
+
+### Importar
+
+1. Na tela inicial, clique no ícone de **engrenagem**
+2. Clique em **"Importar"**
+3. Selecione o arquivo `.json` do backup
+4. Todos os cursos do arquivo serão adicionados aos seus cursos existentes
+
+---
+
 ## Dicas
 
 **Atalhos de teclado:**
@@ -53,7 +72,7 @@ Pronto! Seu curso foi criado com todos os vídeos organizados em módulos.
 
 **Busca:** Use o campo de busca na barra lateral para encontrar qualquer aula pelo nome.
 
-**Tema escuro:** Clique no ícone de sol/lua no canto superior para alternar entre tema claro e escuro.
+**Tema escuro:** Clique no ícone de **engrenagem** no canto superior direito e selecione **"Modo Escuro"** ou **"Modo Claro"**.
 
 **Extensão Chrome:** Existe uma extensão que permite adicionar vídeos ao seu curso com um clique direto do YouTube. [Veja como instalar](INSTALL_EXTENSION.md).
 
@@ -62,7 +81,7 @@ Pronto! Seu curso foi criado com todos os vídeos organizados em módulos.
 ## Perguntas frequentes
 
 **Meu progresso fica salvo?**
-Sim. Tudo é salvo automaticamente no seu navegador. Se você fechar a página e voltar depois, seu progresso estará lá. Mas se você limpar o cache/dados do navegador, os dados serão apagados.
+Sim. Tudo é salvo automaticamente no seu navegador. Se você fechar a página e voltar depois, seu progresso estará lá. Mas se você limpar o cache/dados do navegador, os dados serão apagados. Para evitar perder seus dados, use a função de **exportar backup**.
 
 **Funciona no celular?**
 Sim. A interface se adapta a qualquer tamanho de tela.

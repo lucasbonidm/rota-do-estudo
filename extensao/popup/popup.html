@@ -68,6 +68,41 @@
       <button id="btn-cancel-create-video" class="btn btn-secondary btn-full">Cancelar</button>
     </div>
 
+    <!-- Adicionar como modulo a um curso -->
+    <div class="action-group">
+      <button id="btn-add-module-video" class="btn btn-secondary btn-full">
+        Adicionar como modulo a um curso
+      </button>
+    </div>
+
+    <div id="add-module-video-form" class="form-group hidden">
+      <label>Selecione o curso:</label>
+      <select id="select-course-video"></select>
+      <p id="no-courses-video" class="no-courses hidden">Nenhum curso encontrado. Crie um curso primeiro.</p>
+      <label>Nome do modulo:</label>
+      <input type="text" id="input-module-name-video" />
+      <button id="btn-confirm-module-video" class="btn btn-primary btn-full">Confirmar</button>
+      <button id="btn-cancel-module-video" class="btn btn-secondary btn-full">Cancelar</button>
+    </div>
+
+    <!-- Adicionar video a um modulo existente -->
+    <div class="action-group">
+      <button id="btn-add-lesson-video" class="btn btn-secondary btn-full">
+        Adicionar video a um modulo existente
+      </button>
+    </div>
+
+    <div id="add-lesson-video-form" class="form-group hidden">
+      <label>Selecione o curso:</label>
+      <select id="select-lesson-course-video"></select>
+      <p id="no-courses-lesson-video" class="no-courses hidden">Nenhum curso encontrado. Crie um curso primeiro.</p>
+      <label>Selecione o modulo:</label>
+      <select id="select-lesson-module-video"></select>
+      <p id="no-modules-lesson-video" class="no-courses hidden">Este curso nao tem modulos.</p>
+      <button id="btn-confirm-lesson-video" class="btn btn-primary btn-full">Confirmar</button>
+      <button id="btn-cancel-lesson-video" class="btn btn-secondary btn-full">Cancelar</button>
+    </div>
+
     <button id="btn-open-app-video" class="btn btn-secondary btn-full">Abrir App</button>
   </section>
 
@@ -104,6 +139,41 @@
       </div>
       <button id="btn-confirm-create-playlist" class="btn btn-primary btn-full">Confirmar</button>
       <button id="btn-cancel-create-playlist" class="btn btn-secondary btn-full">Cancelar</button>
+    </div>
+
+    <!-- Adicionar como modulo a um curso -->
+    <div class="action-group">
+      <button id="btn-add-module-playlist" class="btn btn-secondary btn-full">
+        Adicionar como modulo a um curso
+      </button>
+    </div>
+
+    <div id="add-module-playlist-form" class="form-group hidden">
+      <label>Selecione o curso:</label>
+      <select id="select-course-playlist"></select>
+      <p id="no-courses-playlist" class="no-courses hidden">Nenhum curso encontrado. Crie um curso primeiro.</p>
+      <label>Nome do modulo:</label>
+      <input type="text" id="input-module-name-playlist" />
+      <button id="btn-confirm-module-playlist" class="btn btn-primary btn-full">Confirmar</button>
+      <button id="btn-cancel-module-playlist" class="btn btn-secondary btn-full">Cancelar</button>
+    </div>
+
+    <!-- Adicionar videos a um modulo existente -->
+    <div class="action-group">
+      <button id="btn-add-lesson-playlist" class="btn btn-secondary btn-full">
+        Adicionar videos a um modulo existente
+      </button>
+    </div>
+
+    <div id="add-lesson-playlist-form" class="form-group hidden">
+      <label>Selecione o curso:</label>
+      <select id="select-lesson-course-playlist"></select>
+      <p id="no-courses-lesson-playlist" class="no-courses hidden">Nenhum curso encontrado. Crie um curso primeiro.</p>
+      <label>Selecione o modulo:</label>
+      <select id="select-lesson-module-playlist"></select>
+      <p id="no-modules-lesson-playlist" class="no-courses hidden">Este curso nao tem modulos.</p>
+      <button id="btn-confirm-lesson-playlist" class="btn btn-primary btn-full">Confirmar</button>
+      <button id="btn-cancel-lesson-playlist" class="btn btn-secondary btn-full">Cancelar</button>
     </div>
 
     <button id="btn-open-app-playlist" class="btn btn-secondary btn-full">Abrir App</button>

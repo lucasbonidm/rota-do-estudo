@@ -13,9 +13,8 @@ function initApp() {
         document.documentElement.classList.remove('dark');
     }
 
-    // 3. Theme toggle buttons (both views)
+    // 3. Theme toggle button (home view only)
     document.getElementById('themeToggleHome').addEventListener('click', toggleTheme);
-    document.getElementById('themeToggleCourse').addEventListener('click', toggleTheme);
 
     // 4. Register routes
     Router.register('/home', HomeView);

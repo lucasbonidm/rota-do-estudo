@@ -336,6 +336,26 @@ const Store = {
         return JSON.stringify(course, null, 2);
     },
 
+    exportAll() {
+        const index = this.getCoursesIndex();
+        const courses = index.map(entry => this.getCourse(entry.id)).filter(Boolean);
+        return {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            courses
+        };
+    },
+
+    importAll(data) {
+        if (!data || !Array.isArray(data.courses)) return 0;
+        let count = 0;
+        data.courses.forEach(course => {
+            this.importCourse(course);
+            count++;
+        });
+        return count;
+    },
+
     // ============ MIGRATION ============
     migrateFromLegacy() {
         const hasIndex = localStorage.getItem(this.KEYS.INDEX);

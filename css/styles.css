@@ -1391,6 +1391,78 @@ input:focus-visible {
   border-radius: var(--radius);
 }
 
+/* ============ SETTINGS DROPDOWN ============ */
+.settings-dropdown {
+  position: relative;
+}
+
+.settings-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  z-index: 60;
+}
+
+.dark .settings-menu {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.settings-menu.open {
+  display: block;
+}
+
+.settings-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.settings-menu-item:hover {
+  background: var(--accent);
+}
+
+.settings-menu-item svg {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.settings-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* Theme labels in settings menu */
+.theme-label-dark {
+  display: none;
+}
+
+.dark .theme-label-light {
+  display: none;
+}
+
+.dark .theme-label-dark {
+  display: inline;
+}
+
 /* ============ THEME TOGGLE ============ */
 .dark .icon-sun {
   display: none;

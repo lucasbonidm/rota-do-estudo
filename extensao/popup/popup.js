@@ -178,6 +178,132 @@
     return modules;
   }
 
+  // ============ ADICIONAR MODULO A CURSO EXISTENTE ============
+
+  async function fetchCourses() {
+    const result = await sendMessage({ type: 'GET_COURSES' });
+    return result?.courses || [];
+  }
+
+  function populateCourseSelect(selectEl, noCoursesMsgEl, courses) {
+    selectEl.innerHTML = '';
+    if (!courses.length) {
+      selectEl.classList.add('hidden');
+      noCoursesMsgEl.classList.remove('hidden');
+      return false;
+    }
+    noCoursesMsgEl.classList.add('hidden');
+    selectEl.classList.remove('hidden');
+    courses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.title;
+      selectEl.appendChild(opt);
+    });
+    return true;
+  }
+
+  async function addModuleToCourse(courseId, moduleName, lessons) {
+    showView('loading');
+
+    const result = await sendMessage({
+      type: 'IMPORT_MODULE',
+      data: {
+        courseId,
+        module: {
+          title: moduleName,
+          description: '',
+          lessons
+        }
+      }
+    });
+
+    if (result?.success) {
+      state.lastCreatedCourseId = courseId;
+      showFeedback('success', 'Modulo adicionado!', `"${moduleName}" - ${lessons.length} aula${lessons.length !== 1 ? 's' : ''}`);
+    } else {
+      showFeedback('error', 'Erro ao adicionar modulo', result?.error || 'Tente novamente');
+    }
+  }
+
+  // ============ ADICIONAR VIDEO A MODULO EXISTENTE ============
+
+  async function fetchCourse(courseId) {
+    const result = await sendMessage({ type: 'GET_COURSE', courseId });
+    return result?.course || null;
+  }
+
+  function populateModuleSelect(selectEl, noModulesMsgEl, modules) {
+    selectEl.innerHTML = '';
+    if (!modules || !modules.length) {
+      selectEl.classList.add('hidden');
+      noModulesMsgEl.classList.remove('hidden');
+      return false;
+    }
+    noModulesMsgEl.classList.add('hidden');
+    selectEl.classList.remove('hidden');
+    modules.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.title;
+      selectEl.appendChild(opt);
+    });
+    return true;
+  }
+
+  async function addLessonToModule(courseId, moduleId) {
+    const data = state.videoData;
+    if (!data) return;
+
+    showView('loading');
+
+    const result = await sendMessage({
+      type: 'ADD_LESSON',
+      data: {
+        courseId,
+        moduleId,
+        title: data.title,
+        url: data.url,
+        videoId: data.videoId
+      }
+    });
+
+    if (result?.success) {
+      state.lastCreatedCourseId = courseId;
+      showFeedback('success', 'Video adicionado!', `"${data.title}"`);
+    } else {
+      showFeedback('error', 'Erro ao adicionar video', result?.error || 'Tente novamente');
+    }
+  }
+
+  async function addLessonsToModule(courseId, moduleId, lessons) {
+    if (!lessons?.length) return;
+
+    showView('loading');
+
+    let added = 0;
+    for (const lesson of lessons) {
+      const result = await sendMessage({
+        type: 'ADD_LESSON',
+        data: {
+          courseId,
+          moduleId,
+          title: lesson.title,
+          url: lesson.url,
+          videoId: lesson.videoId
+        }
+      });
+      if (result?.success) added++;
+    }
+
+    if (added > 0) {
+      state.lastCreatedCourseId = courseId;
+      showFeedback('success', 'Videos adicionados!', `${added} aula${added !== 1 ? 's' : ''} adicionada${added !== 1 ? 's' : ''}`);
+    } else {
+      showFeedback('error', 'Erro ao adicionar videos', 'Tente novamente');
+    }
+  }
+
   // ============ CONFIG ============
 
   async function saveAppUrl(url) {
@@ -279,6 +405,160 @@
       if (name) createCourseFromPlaylist(name, mode);
     });
 
+    // -- Video: adicionar modulo --
+    const addModuleVideoForm = document.getElementById('add-module-video-form');
+    document.getElementById('btn-add-module-video').addEventListener('click', async () => {
+      const courses = await fetchCourses();
+      const hasCoursesV = populateCourseSelect(
+        document.getElementById('select-course-video'),
+        document.getElementById('no-courses-video'),
+        courses
+      );
+      document.getElementById('input-module-name-video').value = state.videoData?.title || '';
+      document.getElementById('btn-confirm-module-video').disabled = !hasCoursesV;
+      addModuleVideoForm.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-cancel-module-video').addEventListener('click', () => {
+      addModuleVideoForm.classList.add('hidden');
+    });
+
+    document.getElementById('btn-confirm-module-video').addEventListener('click', () => {
+      const courseId = document.getElementById('select-course-video').value;
+      const moduleName = document.getElementById('input-module-name-video').value.trim();
+      if (!courseId || !moduleName) return;
+      const data = state.videoData;
+      if (!data) return;
+      addModuleToCourse(courseId, moduleName, [{
+        title: data.title,
+        url: data.url,
+        videoId: data.videoId
+      }]);
+    });
+
+    // -- Video: adicionar aula a modulo existente --
+    const addLessonVideoForm = document.getElementById('add-lesson-video-form');
+    const selectLessonCourse = document.getElementById('select-lesson-course-video');
+    const selectLessonModule = document.getElementById('select-lesson-module-video');
+
+    document.getElementById('btn-add-lesson-video').addEventListener('click', async () => {
+      const courses = await fetchCourses();
+      const hasCourses = populateCourseSelect(
+        selectLessonCourse,
+        document.getElementById('no-courses-lesson-video'),
+        courses
+      );
+      if (hasCourses) {
+        const course = await fetchCourse(selectLessonCourse.value);
+        populateModuleSelect(
+          selectLessonModule,
+          document.getElementById('no-modules-lesson-video'),
+          course?.modules || []
+        );
+      } else {
+        selectLessonModule.classList.add('hidden');
+      }
+      document.getElementById('btn-confirm-lesson-video').disabled = !hasCourses;
+      addLessonVideoForm.classList.remove('hidden');
+    });
+
+    selectLessonCourse.addEventListener('change', async () => {
+      const course = await fetchCourse(selectLessonCourse.value);
+      const hasModules = populateModuleSelect(
+        selectLessonModule,
+        document.getElementById('no-modules-lesson-video'),
+        course?.modules || []
+      );
+      document.getElementById('btn-confirm-lesson-video').disabled = !hasModules;
+    });
+
+    document.getElementById('btn-cancel-lesson-video').addEventListener('click', () => {
+      addLessonVideoForm.classList.add('hidden');
+    });
+
+    document.getElementById('btn-confirm-lesson-video').addEventListener('click', () => {
+      const courseId = selectLessonCourse.value;
+      const moduleId = selectLessonModule.value;
+      if (!courseId || !moduleId) return;
+      addLessonToModule(courseId, moduleId);
+    });
+
+    // -- Playlist: adicionar modulo --
+    const addModulePlaylistForm = document.getElementById('add-module-playlist-form');
+    document.getElementById('btn-add-module-playlist').addEventListener('click', async () => {
+      const courses = await fetchCourses();
+      const hasCoursesP = populateCourseSelect(
+        document.getElementById('select-course-playlist'),
+        document.getElementById('no-courses-playlist'),
+        courses
+      );
+      document.getElementById('input-module-name-playlist').value = state.playlistData?.title || '';
+      document.getElementById('btn-confirm-module-playlist').disabled = !hasCoursesP;
+      addModulePlaylistForm.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-cancel-module-playlist').addEventListener('click', () => {
+      addModulePlaylistForm.classList.add('hidden');
+    });
+
+    document.getElementById('btn-confirm-module-playlist').addEventListener('click', () => {
+      const courseId = document.getElementById('select-course-playlist').value;
+      const moduleName = document.getElementById('input-module-name-playlist').value.trim();
+      if (!courseId || !moduleName) return;
+      const data = state.playlistData;
+      if (!data || !data.lessons?.length) return;
+      addModuleToCourse(courseId, moduleName, data.lessons);
+    });
+
+    // -- Playlist: adicionar aulas a modulo existente --
+    const addLessonPlaylistForm = document.getElementById('add-lesson-playlist-form');
+    const selectLessonCourseP = document.getElementById('select-lesson-course-playlist');
+    const selectLessonModuleP = document.getElementById('select-lesson-module-playlist');
+
+    document.getElementById('btn-add-lesson-playlist').addEventListener('click', async () => {
+      const courses = await fetchCourses();
+      const hasCourses = populateCourseSelect(
+        selectLessonCourseP,
+        document.getElementById('no-courses-lesson-playlist'),
+        courses
+      );
+      if (hasCourses) {
+        const course = await fetchCourse(selectLessonCourseP.value);
+        populateModuleSelect(
+          selectLessonModuleP,
+          document.getElementById('no-modules-lesson-playlist'),
+          course?.modules || []
+        );
+      } else {
+        selectLessonModuleP.classList.add('hidden');
+      }
+      document.getElementById('btn-confirm-lesson-playlist').disabled = !hasCourses;
+      addLessonPlaylistForm.classList.remove('hidden');
+    });
+
+    selectLessonCourseP.addEventListener('change', async () => {
+      const course = await fetchCourse(selectLessonCourseP.value);
+      const hasModules = populateModuleSelect(
+        selectLessonModuleP,
+        document.getElementById('no-modules-lesson-playlist'),
+        course?.modules || []
+      );
+      document.getElementById('btn-confirm-lesson-playlist').disabled = !hasModules;
+    });
+
+    document.getElementById('btn-cancel-lesson-playlist').addEventListener('click', () => {
+      addLessonPlaylistForm.classList.add('hidden');
+    });
+
+    document.getElementById('btn-confirm-lesson-playlist').addEventListener('click', () => {
+      const courseId = selectLessonCourseP.value;
+      const moduleId = selectLessonModuleP.value;
+      if (!courseId || !moduleId) return;
+      const data = state.playlistData;
+      if (!data || !data.lessons?.length) return;
+      addLessonsToModule(courseId, moduleId, data.lessons);
+    });
+
     // Enter key nos inputs
     document.getElementById('input-course-name-video').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-confirm-create-video').click();
@@ -286,6 +566,14 @@
 
     document.getElementById('input-course-name-playlist').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-confirm-create-playlist').click();
+    });
+
+    document.getElementById('input-module-name-video').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-confirm-module-video').click();
+    });
+
+    document.getElementById('input-module-name-playlist').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-confirm-module-playlist').click();
     });
 
     document.getElementById('input-app-url').addEventListener('keydown', (e) => {

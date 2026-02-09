@@ -5,6 +5,10 @@
 (function () {
   'use strict';
 
+  // Evitar registro duplicado se o script for reinjetado
+  if (window.__rotaDoEstudoAppScript) return;
+  window.__rotaDoEstudoAppScript = true;
+
   const KEYS = {
     INDEX: 'courses_index',
     courseKey: (id) => `course_${id}`

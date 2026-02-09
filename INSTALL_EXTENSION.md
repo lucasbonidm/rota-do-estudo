@@ -134,21 +134,28 @@ A extensão agora aparece na **barra superior do Chrome**, perto dos ícones de 
 
 ### **O que vai acontecer:**
 
-- Se for um **vídeo**: opção de criar novo curso com esse vídeo
-- Se for uma **playlist**: opção de importar todos os vídeos de uma vez
+A extensão detecta automaticamente se você está em um vídeo ou playlist e oferece 3 opções:
+
+- 📝 **Criar novo curso** — cria um curso completo a partir do vídeo ou playlist
+- 📦 **Adicionar como módulo a um curso** — adiciona um novo módulo dentro de um curso já existente
+- ➕ **Adicionar vídeo(s) a um módulo existente** — adiciona o vídeo (ou todos os vídeos da playlist) como aulas dentro de um módulo que já existe
 
 ### **Escolha o que deseja fazer:**
 
 ```
-┌─────────────────────────────────────┐
-│  🎬 Rota do Estudo                  │
-├─────────────────────────────────────┤
-│  VIDEO detectado                    │
-│  "JavaScript para Iniciantes"       │
-│                                      │
-│  [📝 Criar novo curso]              │
-│  [🔗 Abrir App]                     │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  🎬 Rota do Estudo                       │
+├──────────────────────────────────────────┤
+│  VIDEO detectado                         │
+│  "JavaScript para Iniciantes"            │
+│                                          │
+│  O que deseja fazer?                     │
+│                                          │
+│  [📝 Criar novo curso com este video  ]  │
+│  [📦 Adicionar como modulo a um curso ]  │
+│  [➕ Adicionar video a um modulo      ]  │
+│  [🔗 Abrir App                        ]  │
+└──────────────────────────────────────────┘
 ```
 
 ---
@@ -263,4 +270,4 @@ A extensão funciona em:
 
 ---
 
-**v1.0** • 2026 • [rota-do-estudo.vercel.app](https://rota-do-estudo.vercel.app)
+**v1.1** • 2026 • [rota-do-estudo.vercel.app](https://rota-do-estudo.vercel.app)
