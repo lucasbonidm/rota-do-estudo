@@ -123,12 +123,6 @@ body {
   flex-shrink: 0;
 }
 
-.sidebar-help-links {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .sidebar-brand {
   display: flex;
   align-items: center;
