@@ -123,6 +123,12 @@ body {
   flex-shrink: 0;
 }
 
+.sidebar-help-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -1525,6 +1531,57 @@ input:focus-visible {
     display: block;
 }
 
+/* ============ FOOTER ============ */
+.home-footer {
+  padding: 16px 32px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--card);
+  text-align: center;
+}
+
+.home-footer p {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.home-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.home-footer a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.course-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--card);
+  text-align: center;
+}
+
+.course-footer p {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.course-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.course-footer a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 /* ============ RESPONSIVE: HOME TABLET ============ */
 @media (max-width: 767px) {
   .home-header {
@@ -1545,5 +1602,13 @@ input:focus-visible {
 
   .home-actions .btn span {
     display: none;
+  }
+
+  .home-footer {
+    padding: 12px 16px;
+  }
+
+  .home-footer p {
+    font-size: 11px;
   }
 }

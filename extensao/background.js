@@ -1,7 +1,7 @@
 // ============ SERVICE WORKER - Background ============
 // Gerencia comunicacao entre popup, content scripts e abas
 
-const DEFAULT_APP_URL = 'http://localhost:5500';
+const DEFAULT_APP_URL = 'https://rota-do-estudo.vercel.app/';
 
 // ============ BUSCAR ABA DO APP ============
 

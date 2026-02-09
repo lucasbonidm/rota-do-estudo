@@ -317,7 +317,11 @@ const Store = {
     // ============ UTILITIES ============
     parseVideoId(url) {
         if (!url) return '';
-        const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([\w-]{11})/);
+        // Try multiple patterns for different YouTube URL formats
+        let match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
+        if (match) return match[1];
+        // Fallback for youtu.be with query params
+        match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
         return match ? match[1] : '';
     },
 

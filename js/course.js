@@ -319,8 +319,11 @@ const CourseView = {
             iframe.src = `https://www.youtube-nocookie.com/embed/${lesson.videoId}?rel=0`;
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
             iframe.allowFullscreen = true;
+            iframe.className = 'video-iframe';
             this.elements.videoContainer.innerHTML = '';
             this.elements.videoContainer.appendChild(iframe);
+        } else if (lesson.url) {
+            this.elements.videoContainer.innerHTML = '<div class="placeholder"><p>Nenhum video disponivel para esta aula</p><p style="font-size: 12px; margin-top: 8px; color: var(--color-text-secondary);">URL fornecida: ' + lesson.url.substring(0, 50) + '...</p></div>';
         } else {
             this.elements.videoContainer.innerHTML = '<p class="placeholder">Nenhum video disponivel para esta aula</p>';
         }

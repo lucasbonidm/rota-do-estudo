@@ -293,17 +293,28 @@ Isso pode acontecer por:
 
 ## 🔌 Extensão para Chrome
 
-Estamos desenvolvendo uma **extensão para Chrome** que vai deixar tudo ainda mais fácil!
+A **extensão para Chrome** está pronta! Ela deixa tudo muito mais fácil! 🎉
 
-### **Como vai funcionar:**
+### **Como funciona:**
 - 🖱️ Um clique em um vídeo do YouTube
-- 📍 Extensão detecta automaticamente
+- 📍 A extensão detecta automaticamente
 - ➕ Adiciona direto ao seu curso no Rota do Estudo
 - 🎯 Sem precisar copiar/colar nada
 
-### Status: 🚧 Em Desenvolvimento
+### **Instalação Rápida:**
 
-Quando ficar pronto, você poderá instalá-la da **Chrome Web Store**. Fique atento!
+1. **Baixe os arquivos** do projeto
+2. **Abra Chrome** → Vá em `chrome://extensions/`
+3. **Ative "Modo de desenvolvedor"** (canto superior direito)
+4. **Clique em "Carregar extensão sem empacotar"**
+5. **Selecione a pasta `extensao/`**
+6. **Pronto!** A extensão está instalada
+
+👉 **[Veja o guia completo aqui →](INSTALL_EXTENSION.md)**
+
+### Status: ✅ Funcional
+
+Você pode usar agora em modo desenvolvedor. Estamos trabalhando na submissão para a **Chrome Web Store** para facilitar ainda mais a instalação!
 
 ---
 
