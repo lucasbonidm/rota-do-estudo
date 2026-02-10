@@ -70,23 +70,60 @@ const HomeView = {
 
     // ============ RENDERING ============
     renderCourseGrid() {
-        const grid = document.getElementById('courseGrid');
         const emptyState = document.getElementById('emptyState');
+        const courseSections = document.getElementById('courseSections');
         const courses = Store.getCoursesIndex();
 
-        // Sort by lastAccessed descending
-        courses.sort((a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed));
-
         if (courses.length === 0) {
-            grid.style.display = 'none';
+            courseSections.style.display = 'none';
             emptyState.style.display = 'flex';
             return;
         }
 
-        grid.style.display = 'grid';
-        emptyState.style.display = 'none';
-        grid.innerHTML = '';
+        // Categorize courses by progress
+        const inProgress = [];
+        const notStarted = [];
+        const completed = [];
 
+        courses.forEach(course => {
+            const percentage = course.totalLessons > 0
+                ? Math.round((course.completedLessons / course.totalLessons) * 100)
+                : 0;
+
+            if (percentage === 100) {
+                completed.push(course);
+            } else if (percentage === 0) {
+                notStarted.push(course);
+            } else {
+                inProgress.push(course);
+            }
+        });
+
+        // Sort by lastAccessed descending
+        [inProgress, notStarted, completed].forEach(arr => {
+            arr.sort((a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed));
+        });
+
+        courseSections.style.display = 'block';
+        emptyState.style.display = 'none';
+
+        // Render sections
+        this._renderSection('inProgressSection', 'inProgressGrid', inProgress);
+        this._renderSection('notStartedSection', 'notStartedGrid', notStarted);
+        this._renderSection('completedSection', 'completedGrid', completed);
+    },
+
+    _renderSection(sectionId, gridId, courses) {
+        const section = document.getElementById(sectionId);
+        const grid = document.getElementById(gridId);
+
+        if (courses.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        grid.innerHTML = '';
         courses.forEach(course => {
             grid.appendChild(this._createCourseCard(course));
         });

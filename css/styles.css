@@ -958,6 +958,17 @@ input:focus-visible {
 }
 
 /* ============ COURSE GRID ============ */
+.course-section {
+  margin-bottom: 40px;
+}
+
+.course-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--foreground);
+}
+
 .course-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
