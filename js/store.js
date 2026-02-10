@@ -292,9 +292,9 @@ const Store = {
     getPreferences() {
         try {
             const data = localStorage.getItem(this.KEYS.PREFERENCES);
-            return data ? JSON.parse(data) : { theme: 'dark', lastCourseId: null };
+            return data ? JSON.parse(data) : { theme: 'dark', lastCourseId: null, videoSpeed: 1, autoplay: false };
         } catch {
-            return { theme: 'dark', lastCourseId: null };
+            return { theme: 'dark', lastCourseId: null, videoSpeed: 1, autoplay: false };
         }
     },
 
@@ -312,6 +312,28 @@ const Store = {
         const prefs = this.getPreferences();
         prefs.lastCourseId = courseId;
         this.savePreferences(prefs);
+    },
+
+    setVideoSpeed(speed) {
+        const prefs = this.getPreferences();
+        prefs.videoSpeed = parseFloat(speed) || 1;
+        this.savePreferences(prefs);
+    },
+
+    getVideoSpeed() {
+        const prefs = this.getPreferences();
+        return prefs.videoSpeed || 1;
+    },
+
+    setAutoplay(enabled) {
+        const prefs = this.getPreferences();
+        prefs.autoplay = !!enabled;
+        this.savePreferences(prefs);
+    },
+
+    getAutoplay() {
+        const prefs = this.getPreferences();
+        return prefs.autoplay || false;
     },
 
     // ============ UTILITIES ============

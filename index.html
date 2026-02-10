@@ -227,18 +227,25 @@
 
                         <div class="lesson-info">
                             <h2 id="currentLessonTitle" class="lesson-info-title">&mdash;</h2>
-                            <p id="currentLessonModule" class="lesson-info-module">&mdash;</p>
-                        </div>
-
-                        <div class="lesson-controls">
-                            <button id="markComplete" class="btn btn-outline" disabled title="Marcar/desmarcar aula como concluida">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                <span>Marcar como Concluida</span>
-                            </button>
-                            <a id="openExternal" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="display: none;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-                                <span>Abrir no YouTube</span>
-                            </a>
+                            <div class="lesson-controls">
+                                <select id="speedControl" class="control-select-inline" title="Velocidade do vídeo">
+                                    <option value="0.5">0.5x</option>
+                                    <option value="0.75">0.75x</option>
+                                    <option value="1" selected>1x</option>
+                                    <option value="1.25">1.25x</option>
+                                    <option value="1.5">1.5x</option>
+                                    <option value="1.75">1.75x</option>
+                                    <option value="2">2x</option>
+                                </select>
+                                <button id="autoplayToggle" class="btn btn-ghost autoplay-toggle" title="Autoplay próximo vídeo">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="3" x2="19" y2="21"/></svg>
+                                    <span>Autoplay</span>
+                                </button>
+                                <button id="markComplete" class="btn btn-outline" disabled title="Marcar/desmarcar aula como concluida">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                    <span>Marcar como Concluida</span>
+                                </button>
+                            </div>
                         </div>
                     </section>
 
@@ -286,6 +293,9 @@
             </div>
         </div>
     </div>
+
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 
     <script src="js/store.js"></script>
     <script src="js/router.js"></script>

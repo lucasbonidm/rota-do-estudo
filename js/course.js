@@ -40,7 +40,8 @@ const CourseView = {
         currentModuleId: null,
         currentLessonId: null,
         searchQuery: '',
-        filteredLessons: []
+        filteredLessons: [],
+        currentPlayer: null
     },
 
     elements: {},
@@ -62,6 +63,11 @@ const CourseView = {
         this._cacheElements();
         this._setupEventListeners();
         this._setupSidebarToggle();
+
+        // Initialize video preferences
+        this.elements.speedControl.value = Store.getVideoSpeed();
+        const isAutoplayEnabled = Store.getAutoplay();
+        this.elements.autoplayToggle.classList.toggle('active', isAutoplayEnabled);
 
         // Update sidebar brand
         this.elements.sidebarCourseTitle.textContent = this.state.courseData.title;
@@ -85,6 +91,11 @@ const CourseView = {
 
     leave() {
         // Stop video
+        if (this.state.currentPlayer) {
+            this.state.currentPlayer.stopVideo();
+            this.state.currentPlayer.destroy();
+            this.state.currentPlayer = null;
+        }
         if (this.elements.videoContainer) {
             this.elements.videoContainer.innerHTML = '<p class="placeholder">Selecione uma aula para comecar</p>';
         }
@@ -110,6 +121,12 @@ const CourseView = {
         if (this.elements.addLessonBtn && this._boundHandlers.addLesson) {
             this.elements.addLessonBtn.removeEventListener('click', this._boundHandlers.addLesson);
         }
+        if (this.elements.speedControl && this._boundHandlers.speedChange) {
+            this.elements.speedControl.removeEventListener('change', this._boundHandlers.speedChange);
+        }
+        if (this.elements.autoplayToggle && this._boundHandlers.autoplayToggle) {
+            this.elements.autoplayToggle.removeEventListener('click', this._boundHandlers.autoplayToggle);
+        }
         // Reset state
         this.state.currentModuleId = null;
         this.state.currentLessonId = null;
@@ -133,15 +150,15 @@ const CourseView = {
             noResults: document.getElementById('noResults'),
             videoContainer: document.getElementById('videoContainer'),
             currentLessonTitle: document.getElementById('currentLessonTitle'),
-            currentLessonModule: document.getElementById('currentLessonModule'),
             markCompleteBtn: document.getElementById('markComplete'),
-            openExternalBtn: document.getElementById('openExternal'),
             progressFill: document.querySelector('#course-view .progress-fill'),
             progressText: document.querySelector('#course-view .progress-text'),
             sidebarCourseTitle: document.getElementById('sidebarCourseTitle'),
             backToHome: document.getElementById('backToHome'),
             addModuleBtn: document.getElementById('addModuleBtn'),
-            addLessonBtn: document.getElementById('addLessonBtn')
+            addLessonBtn: document.getElementById('addLessonBtn'),
+            speedControl: document.getElementById('speedControl'),
+            autoplayToggle: document.getElementById('autoplayToggle')
         };
     },
 
@@ -153,6 +170,8 @@ const CourseView = {
         this._boundHandlers.addModule = () => this.handleAddModule();
         this._boundHandlers.addLesson = () => this.handleAddLesson();
         this._boundHandlers.keydown = (e) => this.handleKeydown(e);
+        this._boundHandlers.speedChange = (e) => this.handleSpeedChange(e);
+        this._boundHandlers.autoplayToggle = () => this.handleAutoplayToggle();
 
         this.elements.searchInput.addEventListener('input', this._boundHandlers.search);
         this.elements.clearSearch.addEventListener('click', this._boundHandlers.clearSearch);
@@ -160,6 +179,8 @@ const CourseView = {
         this.elements.backToHome.addEventListener('click', this._boundHandlers.backToHome);
         this.elements.addModuleBtn.addEventListener('click', this._boundHandlers.addModule);
         this.elements.addLessonBtn.addEventListener('click', this._boundHandlers.addLesson);
+        this.elements.speedControl.addEventListener('change', this._boundHandlers.speedChange);
+        this.elements.autoplayToggle.addEventListener('click', this._boundHandlers.autoplayToggle);
         document.addEventListener('keydown', this._boundHandlers.keydown);
     },
 
@@ -311,17 +332,31 @@ const CourseView = {
     },
 
     // ============ VIDEO LOADING ============
-    _loadLesson(lesson, mod) {
+    _loadLesson(lesson) {
         this.state.currentLessonId = lesson.id;
 
         if (lesson.videoId) {
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://www.youtube-nocookie.com/embed/${lesson.videoId}?rel=0`;
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            iframe.allowFullscreen = true;
-            iframe.className = 'video-iframe';
-            this.elements.videoContainer.innerHTML = '';
-            this.elements.videoContainer.appendChild(iframe);
+            // Create a unique container for the YouTube player
+            this.elements.videoContainer.innerHTML = '<div id="playerContainer" class="video-iframe"></div>';
+
+            // Create YouTube player with API
+            this.state.currentPlayer = new YT.Player('playerContainer', {
+                videoId: lesson.videoId,
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    autoplay: 0,
+                    controls: 1,
+                    modestbranding: 1,
+                    rel: 0,
+                    fs: 1,
+                    iv_load_policy: 3
+                },
+                events: {
+                    onReady: (event) => this.onPlayerReady(event),
+                    onStateChange: (event) => this.onPlayerStateChange(event)
+                }
+            });
         } else if (lesson.url) {
             this.elements.videoContainer.innerHTML = '<div class="placeholder"><p>Nenhum video disponivel para esta aula</p><p style="font-size: 12px; margin-top: 8px; color: var(--color-text-secondary);">URL fornecida: ' + lesson.url.substring(0, 50) + '...</p></div>';
         } else {
@@ -329,14 +364,6 @@ const CourseView = {
         }
 
         this.elements.currentLessonTitle.textContent = `${lesson.number}. ${lesson.title}`;
-        this.elements.currentLessonModule.textContent = mod.title;
-
-        if (lesson.url) {
-            this.elements.openExternalBtn.href = lesson.url;
-            this.elements.openExternalBtn.style.display = 'inline-flex';
-        } else {
-            this.elements.openExternalBtn.style.display = 'none';
-        }
 
         this.renderLessons();
         this._updateMarkCompleteButton();
@@ -344,6 +371,27 @@ const CourseView = {
         const lessonItem = document.querySelector(`[data-lesson-id="${lesson.id}"]`);
         if (lessonItem) {
             lessonItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    },
+
+    // ============ PLAYER API CALLBACKS ============
+    onPlayerReady(event) {
+        // Apply saved video speed
+        const speed = Store.getVideoSpeed();
+        event.target.setPlaybackRate(speed);
+        this.elements.speedControl.value = speed;
+
+        if (this.state.pendingAutoplay) {
+            this.state.pendingAutoplay = false;
+            event.target.playVideo();
+        }
+    },
+
+    onPlayerStateChange(event) {
+        // YT.PlayerState.ENDED = 0
+        if (event.data === YT.PlayerState.ENDED && Store.getAutoplay()) {
+            this.state.pendingAutoplay = true;
+            this.toggleLessonCompletion();
         }
     },
 
@@ -359,10 +407,13 @@ const CourseView = {
     },
 
     _clearVideoPanel() {
+        if (this.state.currentPlayer) {
+            this.state.currentPlayer.stopVideo();
+            this.state.currentPlayer.destroy();
+            this.state.currentPlayer = null;
+        }
         this.elements.videoContainer.innerHTML = '<p class="placeholder">Selecione uma aula para comecar</p>';
         this.elements.currentLessonTitle.textContent = '\u2014';
-        this.elements.currentLessonModule.textContent = '\u2014';
-        this.elements.openExternalBtn.style.display = 'none';
         this._updateMarkCompleteButton();
     },
 
@@ -531,6 +582,21 @@ const CourseView = {
                 this._loadLesson(prevMod.lessons[prevMod.lessons.length - 1], prevMod);
             }
         }
+    },
+
+    // ============ PLAYER CONTROLS ============
+    handleSpeedChange(event) {
+        const speed = parseFloat(event.target.value);
+        Store.setVideoSpeed(speed);
+        if (this.state.currentPlayer) {
+            this.state.currentPlayer.setPlaybackRate(speed);
+        }
+    },
+
+    handleAutoplayToggle() {
+        const isActive = !this.elements.autoplayToggle.classList.contains('active');
+        this.elements.autoplayToggle.classList.toggle('active', isActive);
+        Store.setAutoplay(isActive);
     },
 
     // ============ KEYBOARD SHORTCUTS ============

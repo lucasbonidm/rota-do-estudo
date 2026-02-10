@@ -482,8 +482,7 @@ kbd {
 }
 
 .video-container,
-.lesson-info,
-.lesson-controls {
+.lesson-info {
   width: 100%;
   max-width: calc((100vh - 250px) * 16 / 9);
   margin-left: auto;
@@ -515,26 +514,62 @@ kbd {
 
 .lesson-info {
   padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .lesson-info-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--foreground);
   line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.lesson-info-module {
+.control-select-inline {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--background);
+  color: var(--foreground);
   font-size: 13px;
-  color: var(--muted-foreground);
-  margin-top: 2px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+  height: 35.99px;
+}
+
+.control-select-inline:hover {
+  border-color: var(--primary);
+}
+
+.control-select-inline:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.autoplay-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.autoplay-toggle.active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .lesson-controls {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* ============ BUTTONS ============ */
@@ -790,12 +825,14 @@ kbd {
     max-height: 350px;
   }
 
-  .lesson-controls {
+  .lesson-info {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .lesson-controls .btn {
+  .lesson-controls {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .content-header {
