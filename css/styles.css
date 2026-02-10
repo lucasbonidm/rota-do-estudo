@@ -692,6 +692,25 @@ kbd {
   padding: 8px;
 }
 
+/* ============ DRAG HANDLES ============ */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 2px;
+  cursor: grab;
+  opacity: 0;
+  color: var(--text-muted);
+  transition: opacity 0.15s;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+.lesson-item:hover .drag-handle,
+.module-btn:hover .drag-handle {
+  opacity: 1;
+}
+
 /* ============ LESSON ITEMS ============ */
 .lesson-item {
   display: flex;

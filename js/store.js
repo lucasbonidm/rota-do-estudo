@@ -228,6 +228,39 @@ const Store = {
         this.saveCourse(course);
     },
 
+    reorderLessons(courseId, moduleId, orderedIds) {
+        const course = this.getCourse(courseId);
+        if (!course) return;
+        const mod = course.modules.find(m => m.id === moduleId);
+        if (!mod) return;
+        mod.lessons = orderedIds.map(id => mod.lessons.find(l => l.id === id)).filter(Boolean);
+        mod.lessons.forEach((l, i) => l.number = i + 1);
+        this.saveCourse(course);
+    },
+
+    reorderModules(courseId, orderedIds) {
+        const course = this.getCourse(courseId);
+        if (!course) return;
+        course.modules = orderedIds.map(id => course.modules.find(m => m.id === id)).filter(Boolean);
+        this.saveCourse(course);
+    },
+
+    moveLesson(courseId, fromModuleId, toModuleId, lessonId) {
+        if (fromModuleId === toModuleId) return;
+        const course = this.getCourse(courseId);
+        if (!course) return;
+        const fromMod = course.modules.find(m => m.id === fromModuleId);
+        const toMod = course.modules.find(m => m.id === toModuleId);
+        if (!fromMod || !toMod) return;
+        const lesson = fromMod.lessons.find(l => l.id === lessonId);
+        if (!lesson) return;
+        fromMod.lessons = fromMod.lessons.filter(l => l.id !== lessonId);
+        fromMod.lessons.forEach((l, i) => l.number = i + 1);
+        lesson.number = toMod.lessons.length + 1;
+        toMod.lessons.push(lesson);
+        this.saveCourse(course);
+    },
+
     deleteLesson(courseId, moduleId, lessonId) {
         const course = this.getCourse(courseId);
         if (!course) return;

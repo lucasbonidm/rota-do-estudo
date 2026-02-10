@@ -202,6 +202,7 @@ const CourseView = {
 
             btn.innerHTML = `
                 <div class="module-btn-content">
+                    <span class="drag-handle" title="Arrastar para reordenar"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="5" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/></svg></span>
                     <div class="module-btn-label">${mod.title}</div>
                     <div class="module-btn-actions">
                         <button class="action-btn action-edit" data-action="edit-module" data-module-id="${mod.id}" title="Editar modulo">
@@ -239,6 +240,19 @@ const CourseView = {
 
             nav.appendChild(btn);
         });
+
+        if (window.Sortable) {
+            if (this._moduleSortable) this._moduleSortable.destroy();
+            this._moduleSortable = new Sortable(nav, {
+                animation: 150,
+                handle: '.drag-handle',
+                onEnd: () => {
+                    const orderedIds = [...nav.querySelectorAll('.module-btn')].map(el => el.dataset.moduleId);
+                    Store.reorderModules(this.state.courseId, orderedIds);
+                    this.state.courseData = Store.getCourse(this.state.courseId);
+                }
+            });
+        }
     },
 
     selectModule(moduleId) {
@@ -300,6 +314,7 @@ const CourseView = {
             if (this.state.currentLessonId === lesson.id) item.classList.add('active');
 
             item.innerHTML = `
+                <span class="drag-handle" title="Arrastar para reordenar"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="5" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/></svg></span>
                 <span class="lesson-number">${lesson.number}</span>
                 <span class="lesson-title">${lesson.title}</span>
                 <div class="lesson-actions">
@@ -329,6 +344,20 @@ const CourseView = {
 
             list.appendChild(item);
         });
+
+        if (window.Sortable && !this.state.searchQuery.trim()) {
+            if (this._lessonSortable) this._lessonSortable.destroy();
+            this._lessonSortable = new Sortable(list, {
+                animation: 150,
+                handle: '.drag-handle',
+                onEnd: () => {
+                    const orderedIds = [...list.querySelectorAll('.lesson-item')].map(el => el.dataset.lessonId);
+                    Store.reorderLessons(this.state.courseId, this.state.currentModuleId, orderedIds);
+                    this.state.courseData = Store.getCourse(this.state.courseId);
+                    this.renderLessons();
+                }
+            });
+        }
     },
 
     // ============ VIDEO LOADING ============
@@ -822,24 +851,34 @@ const CourseView = {
         const lesson = mod.lessons.find(l => l.id === lessonId);
         if (!lesson) return;
 
+        const moduleOptions = this.state.courseData.modules.map(m =>
+            `<option value="${m.id}"${m.id === moduleId ? ' selected' : ''}>${m.title}</option>`
+        ).join('');
+
         this._openInlineModal('Editar Aula', `
             <label class="form-label" for="editLessonTitle">Titulo</label>
             <input id="editLessonTitle" type="text" class="form-input" value="${lesson.title}" autocomplete="off">
             <label class="form-label" for="editLessonUrl" style="margin-top:12px">URL do YouTube</label>
             <input id="editLessonUrl" type="url" class="form-input" value="${lesson.url || ''}" autocomplete="off">
+            <label class="form-label" for="editLessonModule" style="margin-top:12px">Módulo</label>
+            <select id="editLessonModule" class="form-input">${moduleOptions}</select>
             <button id="confirmEditLesson" class="btn btn-primary modal-action">Salvar</button>
         `, () => {
             document.getElementById('confirmEditLesson').addEventListener('click', () => {
                 const title = document.getElementById('editLessonTitle').value.trim();
                 if (!title) return;
                 const url = document.getElementById('editLessonUrl').value.trim();
+                const newModuleId = document.getElementById('editLessonModule').value;
                 Store.updateLesson(this.state.courseId, moduleId, lessonId, { title, url });
+                if (newModuleId !== moduleId) {
+                    Store.moveLesson(this.state.courseId, moduleId, newModuleId, lessonId);
+                }
                 this.state.courseData = Store.getCourse(this.state.courseId);
                 this.renderLessons();
                 if (this.state.currentLessonId === lessonId) {
                     const updatedLesson = this._findLessonById(lessonId);
                     if (updatedLesson) {
-                        const updatedMod = this.state.courseData.modules.find(m => m.id === moduleId);
+                        const updatedMod = this.state.courseData.modules.find(m => m.id === newModuleId);
                         this._loadLesson(updatedLesson, updatedMod);
                     }
                 }
