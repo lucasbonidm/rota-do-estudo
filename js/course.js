@@ -157,6 +157,8 @@ const CourseView = {
             backToHome: document.getElementById('backToHome'),
             addModuleBtn: document.getElementById('addModuleBtn'),
             addLessonBtn: document.getElementById('addLessonBtn'),
+            toggleLessonPanel: document.getElementById('toggleLessonPanel'),
+            lessonPanel: document.querySelector('.lesson-panel'),
             speedControl: document.getElementById('speedControl'),
             autoplayToggle: document.getElementById('autoplayToggle')
         };
@@ -172,6 +174,7 @@ const CourseView = {
         this._boundHandlers.keydown = (e) => this.handleKeydown(e);
         this._boundHandlers.speedChange = (e) => this.handleSpeedChange(e);
         this._boundHandlers.autoplayToggle = () => this.handleAutoplayToggle();
+        this._boundHandlers.togglePanel = () => this.toggleLessonPanel();
 
         this.elements.searchInput.addEventListener('input', this._boundHandlers.search);
         this.elements.clearSearch.addEventListener('click', this._boundHandlers.clearSearch);
@@ -181,6 +184,7 @@ const CourseView = {
         this.elements.addLessonBtn.addEventListener('click', this._boundHandlers.addLesson);
         this.elements.speedControl.addEventListener('change', this._boundHandlers.speedChange);
         this.elements.autoplayToggle.addEventListener('click', this._boundHandlers.autoplayToggle);
+        this.elements.toggleLessonPanel.addEventListener('click', this._boundHandlers.togglePanel);
         document.addEventListener('keydown', this._boundHandlers.keydown);
     },
 
@@ -626,6 +630,12 @@ const CourseView = {
         const isActive = !this.elements.autoplayToggle.classList.contains('active');
         this.elements.autoplayToggle.classList.toggle('active', isActive);
         Store.setAutoplay(isActive);
+    },
+
+    toggleLessonPanel() {
+        const panel = this.elements.lessonPanel;
+        const isCollapsed = panel.classList.toggle('collapsed');
+        this.elements.toggleLessonPanel.title = isCollapsed ? 'Expandir painel' : 'Recolher painel';
     },
 
     // ============ KEYBOARD SHORTCUTS ============
