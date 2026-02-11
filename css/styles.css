@@ -97,7 +97,7 @@ body {
 /* ============ APP LAYOUT ============ */
 .app-layout {
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: auto 1fr;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -108,9 +108,18 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   background: var(--card);
   border-right: 1px solid var(--border);
   overflow: hidden;
+  transition: width var(--transition-normal), min-width var(--transition-normal);
+}
+
+/* Desktop: sidebar collapsed manually */
+.app-layout.sidebar-collapsed .sidebar {
+  width: 0;
+  min-width: 0;
 }
 
 .sidebar-header {
@@ -431,7 +440,7 @@ kbd {
 }
 
 .sidebar-trigger {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 34px;
@@ -813,10 +822,6 @@ kbd {
 
   .sidebar.open {
     transform: translateX(0);
-  }
-
-  .sidebar-trigger {
-    display: flex;
   }
 
   .content-body {

@@ -3,8 +3,8 @@
   "name": "Rota do Estudo",
   "version": "1.0.0",
   "description": "Adicione vídeos e playlists do YouTube à sua Rota do Estudo com um clique",
-  "author": "Seu Nome",
-  "homepage_url": "https://github.com/seu-usuario/rota-do-estudo",
+  "author": "Lucas Boni de Mattos",
+  "homepage_url": "https://github.com/lucasbonidm/rota-do-estudo",
   "permissions": [
     "activeTab",
     "scripting",
@@ -13,7 +13,8 @@
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
-    "*://youtube.com/*"
+    "*://youtube.com/*",
+    "https://rota-do-estudo.vercel.app/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",

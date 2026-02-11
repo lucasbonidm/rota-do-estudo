@@ -645,16 +645,21 @@ const CourseView = {
         }
     },
 
-    // ============ SIDEBAR TOGGLE (Mobile) ============
+    // ============ SIDEBAR TOGGLE ============
     _setupSidebarToggle() {
         const sidebar = document.getElementById('sidebar');
         const trigger = document.getElementById('sidebarTrigger');
         const overlay = document.getElementById('sidebarOverlay');
+        const appLayout = document.querySelector('.app-layout');
 
         if (trigger) {
             trigger.addEventListener('click', () => {
-                sidebar.classList.toggle('open');
-                if (overlay) overlay.classList.toggle('active');
+                if (window.innerWidth >= 1024) {
+                    appLayout.classList.toggle('sidebar-collapsed');
+                } else {
+                    sidebar.classList.toggle('open');
+                    if (overlay) overlay.classList.toggle('active');
+                }
             });
         }
         if (overlay) {
