@@ -113,6 +113,8 @@
     if (result?.success) {
       state.lastCreatedCourseId = result.courseId;
       showFeedback('success', 'Curso criado com sucesso!', `"${result.title}" - 1 aula`);
+    } else if (result?.appNotOpen) {
+      showFeedback('warning', 'App não está aberto', 'Para salvar o curso, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao criar curso', result?.error || 'Tente novamente');
     }
@@ -148,6 +150,8 @@
     if (result?.success) {
       state.lastCreatedCourseId = result.courseId;
       showFeedback('success', 'Curso criado com sucesso!', `"${courseName}" - ${result.totalLessons} aulas`);
+    } else if (result?.appNotOpen) {
+      showFeedback('warning', 'App não está aberto', 'Para salvar o curso, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao criar curso', result?.error || 'Tente novamente');
     }
@@ -228,6 +232,8 @@
     if (result?.success) {
       state.lastCreatedCourseId = courseId;
       showFeedback('success', 'Modulo adicionado!', `"${moduleName}" - ${lessons.length} aula${lessons.length !== 1 ? 's' : ''}`);
+    } else if (result?.appNotOpen) {
+      showFeedback('warning', 'App não está aberto', 'Para salvar o módulo, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao adicionar modulo', result?.error || 'Tente novamente');
     }
@@ -278,6 +284,8 @@
     if (result?.success) {
       state.lastCreatedCourseId = courseId;
       showFeedback('success', 'Video adicionado!', `"${data.title}"`);
+    } else if (result?.appNotOpen) {
+      showFeedback('warning', 'App não está aberto', 'Para salvar o vídeo, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao adicionar video', result?.error || 'Tente novamente');
     }
@@ -289,6 +297,8 @@
     showView('loading');
 
     let added = 0;
+    let appNotOpenError = null;
+
     for (const lesson of lessons) {
       const result = await sendMessage({
         type: 'ADD_LESSON',
@@ -300,12 +310,18 @@
           videoId: lesson.videoId
         }
       });
-      if (result?.success) added++;
+      if (result?.success) {
+        added++;
+      } else if (result?.appNotOpen) {
+        appNotOpenError = result;
+      }
     }
 
     if (added > 0) {
       state.lastCreatedCourseId = courseId;
       showFeedback('success', 'Videos adicionados!', `${added} aula${added !== 1 ? 's' : ''} adicionada${added !== 1 ? 's' : ''}`);
+    } else if (appNotOpenError) {
+      showFeedback('warning', 'App não está aberto', 'Para salvar os vídeos, abra o app primeiro', appNotOpenError.appUrl);
     } else {
       showFeedback('error', 'Erro ao adicionar videos', 'Tente novamente');
     }
@@ -326,16 +342,41 @@
 
   // ============ FEEDBACK ============
 
-  function showFeedback(type, title, detail) {
+  function showFeedback(type, title, detail, appUrl = null) {
     const content = document.getElementById('feedback-content');
-    const iconChar = type === 'success' ? '\u2713' : '\u2717';
+    const iconChar = type === 'success' ? '\u2713' : (type === 'error' ? '\u2717' : 'ℹ');
 
     content.className = `feedback-${type}`;
-    content.innerHTML = `
+
+    let html = `
       <div class="feedback-icon">${iconChar}</div>
       <div class="feedback-title">${title}</div>
       <div class="feedback-detail">${detail}</div>
     `;
+
+    // Se for erro de app não aberto, adicionar opção de abrir
+    if (type === 'warning' && appUrl) {
+      html = `
+        <div class="feedback-icon">${iconChar}</div>
+        <div class="feedback-title">${title}</div>
+        <div class="feedback-detail">${detail}</div>
+        <button id="btn-open-app-warning" class="btn btn-primary btn-full" style="margin-top: 12px;">
+          Abrir App Agora
+        </button>
+      `;
+    }
+
+    content.innerHTML = html;
+
+    // Vincular evento se for warning com app URL
+    if (type === 'warning' && appUrl) {
+      setTimeout(() => {
+        const btn = document.getElementById('btn-open-app-warning');
+        if (btn) {
+          btn.addEventListener('click', () => openApp(state.lastCreatedCourseId));
+        }
+      }, 0);
+    }
 
     showView('feedback');
   }

@@ -346,6 +346,7 @@ select option {
 
 .feedback-success .feedback-icon { color: #4ade80; }
 .feedback-error .feedback-icon { color: #f87171; }
+.feedback-warning .feedback-icon { color: #facc15; }
 
 .feedback-actions {
   display: flex;

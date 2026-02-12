@@ -16,57 +16,61 @@ async function findAppTab() {
   return tabs.find(tab => tab.url && tab.url.startsWith(appUrl));
 }
 
-async function ensureAppTab() {
+// Verificar se app está acessível (sem tentar abrir nova aba)
+async function checkAppAvailable() {
+  const tab = await findAppTab();
+  if (!tab) {
+    return { available: false, tabId: null };
+  }
+
+  // Tentar injetar content script para verificar se está realmente responsivo
+  try {
+    await injectAppContentScript(tab.id);
+    return { available: true, tabId: tab.id };
+  } catch {
+    return { available: false, tabId: tab.id };
+  }
+}
+
+// Abrir app (com interação do usuário, é permitido)
+async function openAppTab(courseId = null) {
+  const appUrl = await getAppUrl();
+  const targetUrl = courseId ? `${appUrl}#/course/${courseId}` : appUrl;
+
   let tab = await findAppTab();
 
   if (tab) {
-    // App ja esta aberto, garantir content script injetado
-    try {
-      await injectAppContentScript(tab.id);
-      return tab;
-    } catch (err) {
-      console.warn('[NC] Content script falhou em aba existente, abrindo nova:', err);
-      // Se falhou em aba existente, tentar fechar e abrir nova
-      try {
-        await chrome.tabs.remove(tab.id);
-      } catch {}
-    }
+    // App já está aberto, atualizar URL
+    console.log('[NC] App já aberto, atualizando para:', targetUrl);
+    await chrome.tabs.update(tab.id, { url: targetUrl, active: true });
+  } else {
+    // Abrir nova aba (com interação do usuário, é permitido)
+    console.log('[NC] Abrindo app em:', targetUrl);
+    tab = await chrome.tabs.create({ url: targetUrl, active: true });
+
+    // Aguardar carregamento e injetar script
+    await new Promise((resolve) => {
+      const listener = (tabId, info) => {
+        if (tabId === tab.id && info.status === 'complete') {
+          console.log('[NC] App carregado, tab:', tabId);
+          chrome.tabs.onUpdated.removeListener(listener);
+          injectAppContentScript(tab.id).catch(err => {
+            console.error('[NC] Erro ao injetar script:', err);
+          });
+          resolve();
+        }
+      };
+
+      const timeout = setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener);
+        console.warn('[NC] Timeout aguardando carregamento do app');
+        resolve();
+      }, 30000);
+
+      chrome.tabs.onUpdated.addListener(listener);
+    });
   }
 
-  // Abrir nova aba com o app
-  const appUrl = await getAppUrl();
-  console.log('[NC] Abrindo app em:', appUrl);
-  tab = await chrome.tabs.create({ url: appUrl, active: false });
-
-  // Aguardar carregamento completo
-  let loadAttempts = 0;
-  const maxAttempts = 30; // 30 segundos máximo
-
-  await new Promise((resolve) => {
-    const listener = (tabId, info) => {
-      if (tabId === tab.id && info.status === 'complete') {
-        console.log('[NC] App carregado, tab:', tabId);
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    };
-
-    // Timeout de segurança
-    const timeout = setTimeout(() => {
-      chrome.tabs.onUpdated.removeListener(listener);
-      console.warn('[NC] Timeout aguardando carregamento do app');
-      resolve(); // Continuar mesmo com timeout
-    }, 30000);
-
-    chrome.tabs.onUpdated.addListener(listener);
-  });
-
-  await injectAppContentScript(tab.id);
-
-  // Aumentar delay para garantir que o content script está pronto
-  await new Promise(r => setTimeout(r, 500));
-
-  console.log('[NC] App tab pronto:', tab.id);
   return tab;
 }
 
@@ -136,22 +140,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // ============ OPERACOES NO APP ============
 
 async function handleAppOperation(msg) {
-  let tab;
-  try {
-    tab = await ensureAppTab();
-    if (!tab || !tab.id) {
-      throw new Error('Tab inválida');
-    }
-  } catch (err) {
-    console.error('[NC] Erro ao garantir aba do app:', err);
-    return { success: false, error: 'Não foi possível abrir o app. Verifique se o navegador permite abrir abas.' };
+  // Primeiro, verificar se app está disponível
+  const appCheck = await checkAppAvailable();
+
+  if (!appCheck.available) {
+    console.warn('[NC] App não está disponível');
+    const appUrl = await getAppUrl();
+    return {
+      success: false,
+      error: 'App não está aberto',
+      appNotOpen: true,
+      appUrl: appUrl
+    };
   }
+
+  let tab = appCheck.tabId;
 
   // Tentar enviar mensagem, com retry apos reinjecao
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       console.log(`[NC] Tentativa ${attempt + 1} de enviar mensagem (${msg.type})`);
-      const response = await chrome.tabs.sendMessage(tab.id, msg);
+      const response = await chrome.tabs.sendMessage(tab, msg);
       if (response) {
         console.log(`[NC] Resposta recebida:`, response);
         return response;
@@ -162,7 +171,7 @@ async function handleAppOperation(msg) {
         // Não é a última tentativa - tentar reinjetar e aguardar
         try {
           console.log('[NC] Reinjetando content script...');
-          await injectAppContentScript(tab.id);
+          await injectAppContentScript(tab);
           // Aguardar mais tempo para script inicializar
           await new Promise(r => setTimeout(r, 800));
         } catch (reinjectErr) {
@@ -176,13 +185,9 @@ async function handleAppOperation(msg) {
 }
 
 async function openAppInCourse(courseId) {
-  const appUrl = await getAppUrl();
-  const url = courseId ? `${appUrl}#/course/${courseId}` : appUrl;
-  const tab = await findAppTab();
-
-  if (tab) {
-    await chrome.tabs.update(tab.id, { url, active: true });
-  } else {
-    await chrome.tabs.create({ url, active: true });
+  try {
+    await openAppTab(courseId);
+  } catch (err) {
+    console.error('[NC] Erro ao abrir app:', err);
   }
 }
