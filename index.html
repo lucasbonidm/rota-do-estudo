@@ -293,12 +293,33 @@
         </div>
     </div>
 
+    <!-- Dialog Overlay (confirm / alert customizados) -->
+    <div id="dialogOverlay" class="modal-overlay" style="display:none;" role="alertdialog"
+         aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogMessage">
+        <div class="modal modal-small" id="dialogBox">
+            <div class="modal-header">
+                <h2 id="dialogTitle" class="modal-title">
+                    <span id="dialogIcon" class="dialog-icon" aria-hidden="true"></span>
+                    <span id="dialogTitleText"></span>
+                </h2>
+                <button id="dialogClose" class="btn btn-ghost modal-close" aria-label="Fechar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="dialogMessage" class="dialog-message"></p>
+                <div id="dialogActions" class="dialog-actions"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 
+    <script src="js/dialog.js"></script>
     <script src="js/store.js"></script>
     <script src="js/router.js"></script>
     <script src="js/home.js"></script>

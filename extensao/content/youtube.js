@@ -4,6 +4,10 @@
 (function () {
   'use strict';
 
+  // Evitar registro duplicado se o script for reinjetado
+  if (window.__rotaDoEstudoYouTubeScript) return;
+  window.__rotaDoEstudoYouTubeScript = true;
+
   // Listener unico para todas as mensagens
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'DETECT_PAGE') {
@@ -60,7 +64,7 @@
   async function detectPage() {
     const url = window.location.href;
 
-    // Playlist page
+    // Playlist: /playlist?list=... ou /watch?v=...&list=...
     if (url.includes('list=') && (url.includes('/playlist') || url.includes('/watch'))) {
       const data = await extractPlaylistData();
       return {
@@ -71,7 +75,7 @@
       };
     }
 
-    // Video page
+    // Video avulso: /watch?v=... (sem list=)
     if (url.includes('/watch') && url.includes('v=')) {
       const data = extractVideoData();
       return {

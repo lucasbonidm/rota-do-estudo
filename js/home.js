@@ -62,10 +62,17 @@ const HomeView = {
         document.title = 'Rota do Estudo';
         this.renderCourseGrid();
         this._setupEventListeners();
+
+        // Escutar atualizações da extensão Chrome
+        this._onExtensionUpdate = () => this.renderCourseGrid();
+        window.addEventListener('course-data-updated', this._onExtensionUpdate);
     },
 
     leave() {
-        // No cleanup needed
+        if (this._onExtensionUpdate) {
+            window.removeEventListener('course-data-updated', this._onExtensionUpdate);
+            this._onExtensionUpdate = null;
+        }
     },
 
     // ============ RENDERING ============
@@ -353,8 +360,14 @@ const HomeView = {
         }, 50);
     },
 
-    _handleDeleteCourse(courseId, title) {
-        if (!confirm(`Excluir o curso "${title}" e todo o progresso?`)) return;
+    async _handleDeleteCourse(courseId, title) {
+        const ok = await Dialog.confirm({
+            title: 'Excluir curso',
+            message: `Excluir o curso "${title}" e todo o progresso?`,
+            confirmLabel: 'Excluir',
+            danger: true,
+        });
+        if (!ok) return;
         Store.deleteCourse(courseId);
         this.renderCourseGrid();
     },
@@ -365,7 +378,7 @@ const HomeView = {
 
         // Copy to clipboard
         navigator.clipboard.writeText(json).then(() => {
-            alert('JSON do curso copiado para a area de transferencia!');
+            Dialog.alert({ message: 'JSON do curso copiado para a área de transferência!', type: 'success' });
         }).catch(() => {
             // Fallback: open in new window
             const w = window.open('', '_blank');
@@ -378,7 +391,7 @@ const HomeView = {
     _handleExportAll() {
         const data = Store.exportAll();
         if (!data.courses.length) {
-            alert('Nenhum curso para exportar.');
+            Dialog.alert({ message: 'Nenhum curso para exportar.', type: 'warning' });
             return;
         }
         const json = JSON.stringify(data, null, 2);
@@ -409,10 +422,10 @@ const HomeView = {
                         throw new Error('Arquivo invalido: esperado um backup com "courses".');
                     }
                     const count = Store.importAll(data);
-                    alert(`${count} curso(s) importado(s) com sucesso!`);
+                    Dialog.alert({ message: `${count} curso(s) importado(s) com sucesso!`, type: 'success' });
                     this.renderCourseGrid();
                 } catch (err) {
-                    alert(`Erro ao importar: ${err.message}`);
+                    Dialog.alert({ message: `Erro ao importar: ${err.message}`, type: 'error' });
                 }
             };
             reader.readAsText(file);

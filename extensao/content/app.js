@@ -206,32 +206,33 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'GET_COURSES') {
-      const index = getCoursesIndex();
-      sendResponse({ courses: index });
+      sendResponse({ courses: getCoursesIndex() });
+      return;
     }
 
     if (msg.type === 'GET_COURSE') {
-      const course = getCourse(msg.courseId);
-      sendResponse({ course });
+      sendResponse({ course: getCourse(msg.courseId) });
+      return;
     }
 
     if (msg.type === 'CREATE_COURSE') {
-      const result = createCourse(msg.data);
-      sendResponse(result);
+      sendResponse(createCourse(msg.data));
+      return;
     }
 
     if (msg.type === 'ADD_LESSON') {
-      const result = addLesson(msg.data);
-      sendResponse(result);
+      sendResponse(addLesson(msg.data));
+      return;
     }
 
     if (msg.type === 'IMPORT_MODULE') {
-      const result = importModule(msg.data);
-      sendResponse(result);
+      sendResponse(importModule(msg.data));
+      return;
     }
 
     if (msg.type === 'PING') {
       sendResponse({ status: 'ok' });
+      return;
     }
   });
 })();

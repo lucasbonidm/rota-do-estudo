@@ -10,41 +10,33 @@
   <!-- HEADER -->
   <header class="header">
     <h1>Rota do Estudo</h1>
-    <button id="btn-config" class="btn-icon" title="Configuracoes">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M6.5 1L7.1 3.1a5 5 0 011.8 0L9.5 1h1l.6 2.1a5 5 0 011.3 1.3L14.5 3.8v1l-2.1.6a5 5 0 010 1.8l2.1.6v1l-2.1.6a5 5 0 01-1.3 1.3l.6 2.1h-1l-.6-2.1a5 5 0 01-1.8 0L7.1 13h-1l-.6-2.1a5 5 0 01-1.3-1.3L2.1 10.2v-1l2.1-.6a5 5 0 010-1.8L2.1 6.2v-1l2.1-.6a5 5 0 011.3-1.3L4.9 1.2h1z" stroke="currentColor" stroke-width="1.2"/>
-        <circle cx="8" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/>
-      </svg>
-    </button>
   </header>
-
-  <!-- TELA: Configuracao -->
-  <section id="view-config" class="view hidden">
-    <p class="label">URL do seu app:</p>
-    <input type="url" id="input-app-url" placeholder="https://rota-do-estudo.vercel.app/" />
-    <button id="btn-save-url" class="btn btn-primary">Salvar</button>
-    <button id="btn-cancel-config" class="btn btn-secondary">Voltar</button>
-  </section>
 
   <!-- TELA: Carregando -->
   <section id="view-loading" class="view">
     <div class="spinner"></div>
-    <p>Detectando pagina...</p>
+    <p id="loading-text">Detectando pagina...</p>
   </section>
 
-  <!-- TELA: Fora do YouTube -->
+  <!-- TELA: Nada detectado -->
   <section id="view-none" class="view hidden">
     <div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
         <polygon points="20,18 32,24 20,30" fill="currentColor"/>
       </svg>
+      <!-- Mensagem fora do YouTube -->
       <p id="msg-none-default">Abra um video ou playlist no YouTube para comecar.</p>
-      <p id="msg-none-retry" class="hidden" style="font-size: 12px; opacity: 0.7; margin-top: 8px;">
-        Nenhum video ou playlist foi detectado. Tente recarregar a página.
-      </p>
+      <!-- Mensagem no YouTube sem detecção -->
+      <div id="msg-none-youtube" class="hidden">
+        <p>Nenhum video ou playlist detectado nesta pagina.</p>
+        <p style="font-size: 11px; opacity: 0.6; margin-top: 6px;">
+          Se voce esta em uma playlist, tente recarregar a pagina.
+        </p>
+      </div>
     </div>
     <button id="btn-retry-detect" class="btn btn-primary btn-full hidden">Tentar Novamente</button>
+    <button id="btn-reload-page" class="btn btn-secondary btn-full hidden">Recarregar Pagina</button>
     <button id="btn-open-app-none" class="btn btn-secondary">Abrir App</button>
   </section>
 

@@ -5,13 +5,13 @@
 
   // ============ STATE ============
 
+  const APP_URL = 'https://rota-do-estudo.vercel.app';
+
   let state = {
-    context: 'loading', // loading | none | video | playlist | config | feedback
+    context: 'loading', // loading | none | video | playlist | feedback
     videoData: null,
     playlistData: null,
-    appUrl: '',
     lastCreatedCourseId: null,
-    detectAttempts: 0, // Rastrear número de tentativas de detecção
     isYouTubePage: false // Se está realmente em uma página do YouTube
   };
 
@@ -22,7 +22,6 @@
     none: document.getElementById('view-none'),
     video: document.getElementById('view-video'),
     playlist: document.getElementById('view-playlist'),
-    config: document.getElementById('view-config'),
     feedback: document.getElementById('view-feedback')
   };
 
@@ -32,17 +31,6 @@
     bindEvents();
 
     try {
-      // Carregar URL do app
-      const response = await sendMessage({ type: 'GET_APP_URL' });
-      state.appUrl = response?.url || '';
-
-      // Se nao tem URL configurada, mostrar config
-      if (!state.appUrl) {
-        showView('config');
-        return;
-      }
-
-      // Detectar pagina do YouTube
       await detectPage();
     } catch (err) {
       console.error('[POPUP] Erro ao inicializar:', err);
@@ -53,8 +41,7 @@
   // ============ DETECCAO ============
 
   async function detectPage() {
-    showView('loading');
-    state.detectAttempts = 0;
+    showLoading('Detectando pagina...');
     state.isYouTubePage = false;
 
     try {
@@ -70,7 +57,6 @@
       }
 
       if (result.context === 'video') {
-        state.detectAttempts = 0;
         state.videoData = result;
         document.getElementById('video-title').textContent = result.title || 'Vídeo sem título';
         showView('video');
@@ -78,7 +64,6 @@
       }
 
       if (result.context === 'playlist') {
-        state.detectAttempts = 0;
         state.playlistData = result;
         document.getElementById('playlist-title').textContent = result.title || 'Playlist sem título';
         const count = result.totalVideos || 0;
@@ -98,23 +83,38 @@
   // Mostrar view "none" com mensagens apropriadas
   function showNoneView() {
     const msgDefault = document.getElementById('msg-none-default');
-    const msgRetry = document.getElementById('msg-none-retry');
+    const msgYoutube = document.getElementById('msg-none-youtube');
     const btnRetry = document.getElementById('btn-retry-detect');
+    const btnReload = document.getElementById('btn-reload-page');
 
-    if (state.isYouTubePage && state.detectAttempts === 0) {
-      // Primeira vez que falha em uma página do YouTube
+    if (state.isYouTubePage) {
+      // Está no YouTube mas não detectou nada
       msgDefault.classList.add('hidden');
-      msgRetry.classList.remove('hidden');
+      msgYoutube.classList.remove('hidden');
       btnRetry.classList.remove('hidden');
-      state.detectAttempts++;
+      btnReload.classList.remove('hidden');
     } else {
-      // Não é YouTube ou já tentou novamente
+      // Fora do YouTube
       msgDefault.classList.remove('hidden');
-      msgRetry.classList.add('hidden');
+      msgYoutube.classList.add('hidden');
       btnRetry.classList.add('hidden');
+      btnReload.classList.add('hidden');
     }
 
     showView('none');
+  }
+
+  // Recarregar página e re-detectar
+  async function reloadAndDetect() {
+    showLoading('Recarregando pagina...');
+
+    try {
+      await sendMessage({ type: 'RELOAD_TAB' });
+      await detectPage();
+    } catch (err) {
+      console.error('[POPUP] Erro ao recarregar:', err);
+      showNoneView();
+    }
   }
 
   // ============ ACOES ============
@@ -124,7 +124,7 @@
     const data = state.videoData;
     if (!data) return;
 
-    showView('loading');
+    showLoading('Criando curso...');
 
     const result = await sendMessage({
       type: 'CREATE_COURSE',
@@ -155,7 +155,7 @@
     const data = state.playlistData;
     if (!data || !data.lessons?.length) return;
 
-    showView('loading');
+    showLoading('Criando curso...');
 
     let modules;
 
@@ -243,7 +243,7 @@
   }
 
   async function addModuleToCourse(courseId, moduleName, lessons) {
-    showView('loading');
+    showLoading('Adicionando modulo...');
 
     const result = await sendMessage({
       type: 'IMPORT_MODULE',
@@ -294,7 +294,7 @@
     const data = state.videoData;
     if (!data) return;
 
-    showView('loading');
+    showLoading('Adicionando video...');
 
     const result = await sendMessage({
       type: 'ADD_LESSON',
@@ -318,7 +318,7 @@
   async function addLessonsToModule(courseId, moduleId, lessons) {
     if (!lessons?.length) return;
 
-    showView('loading');
+    showLoading('Adicionando videos...');
 
     let added = 0;
 
@@ -344,19 +344,6 @@
     } else {
       showFeedback('error', 'Erro ao adicionar videos', 'Tente novamente');
     }
-  }
-
-  // ============ CONFIG ============
-
-  async function saveAppUrl(url) {
-    if (!url) return;
-
-    // Remover barra final
-    url = url.replace(/\/+$/, '');
-
-    await sendMessage({ type: 'SET_APP_URL', url });
-    state.appUrl = url;
-    await detectPage();
   }
 
   // ============ FEEDBACK ============
@@ -416,29 +403,23 @@
     state.context = name;
   }
 
+  function showLoading(text) {
+    const el = document.getElementById('loading-text');
+    if (el) el.textContent = text || 'Detectando pagina...';
+    showView('loading');
+  }
+
   // ============ EVENT BINDING ============
 
   function bindEvents() {
-    // Config
-    document.getElementById('btn-config').addEventListener('click', () => {
-      document.getElementById('input-app-url').value = state.appUrl;
-      showView('config');
-    });
-
-    document.getElementById('btn-save-url').addEventListener('click', () => {
-      const url = document.getElementById('input-app-url').value.trim();
-      saveAppUrl(url);
-    });
-
-    document.getElementById('btn-cancel-config').addEventListener('click', () => {
-      if (state.appUrl) {
-        detectPage();
-      }
-    });
-
     // Retry de detecção
     document.getElementById('btn-retry-detect').addEventListener('click', () => {
       detectPage();
+    });
+
+    // Recarregar página e re-detectar
+    document.getElementById('btn-reload-page').addEventListener('click', () => {
+      reloadAndDetect();
     });
 
     // Abrir App (todos os botoes)
@@ -648,10 +629,6 @@
 
     document.getElementById('input-module-name-playlist').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-confirm-module-playlist').click();
-    });
-
-    document.getElementById('input-app-url').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('btn-save-url').click();
     });
   }
 

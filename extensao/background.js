@@ -1,17 +1,12 @@
 // ============ SERVICE WORKER - Background ============
 // Gerencia comunicacao entre popup, content scripts e abas
 
-const DEFAULT_APP_URL = 'https://rota-do-estudo.vercel.app/';
+const APP_URL = 'https://rota-do-estudo.vercel.app';
 
 // ============ BUSCAR ABA DO APP ============
 
-async function getAppUrl() {
-  const result = await chrome.storage.sync.get('appUrl');
-  return result.appUrl || DEFAULT_APP_URL;
-}
-
 async function findAppTab() {
-  const appUrl = await getAppUrl();
+  const appUrl = APP_URL;
   const tabs = await chrome.tabs.query({});
   return tabs.find(tab => tab.url && tab.url.startsWith(appUrl));
 }
@@ -33,45 +28,55 @@ async function checkAppAvailable() {
 }
 
 // Abrir app (com interação do usuário, é permitido)
-async function openAppTab(courseId = null) {
-  const appUrl = await getAppUrl();
-  const targetUrl = courseId ? `${appUrl}#/course/${courseId}` : appUrl;
+// activateTab=false permite abrir em background sem fechar o popup
+async function openAppTab(courseId = null, activateTab = true) {
+  const targetUrl = courseId ? `${APP_URL}#/course/${courseId}` : APP_URL;
 
   let tab = await findAppTab();
 
   if (tab) {
     // App já está aberto, atualizar URL
     console.log('[NC] App já aberto, atualizando para:', targetUrl);
-    await chrome.tabs.update(tab.id, { url: targetUrl, active: true });
+    await chrome.tabs.update(tab.id, { url: targetUrl, active: activateTab });
   } else {
-    // Abrir nova aba (com interação do usuário, é permitido)
+    // Abrir nova aba
     console.log('[NC] Abrindo app em:', targetUrl);
-    tab = await chrome.tabs.create({ url: targetUrl, active: true });
+    tab = await chrome.tabs.create({ url: targetUrl, active: activateTab });
 
-    // Aguardar carregamento e injetar script
-    await new Promise((resolve) => {
-      const listener = (tabId, info) => {
-        if (tabId === tab.id && info.status === 'complete') {
-          console.log('[NC] App carregado, tab:', tabId);
-          chrome.tabs.onUpdated.removeListener(listener);
-          injectAppContentScript(tab.id).catch(err => {
-            console.error('[NC] Erro ao injetar script:', err);
-          });
-          resolve();
-        }
-      };
+    // Aguardar carregamento completo
+    await waitForTabLoad(tab.id, 30000);
 
-      const timeout = setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener);
-        console.warn('[NC] Timeout aguardando carregamento do app');
-        resolve();
-      }, 30000);
-
-      chrome.tabs.onUpdated.addListener(listener);
-    });
+    // Injetar content script
+    try {
+      await injectAppContentScript(tab.id);
+    } catch (err) {
+      console.error('[NC] Erro ao injetar script:', err);
+    }
   }
 
   return tab;
+}
+
+// Aguardar aba carregar completamente
+async function waitForTabLoad(tabId, timeoutMs = 15000) {
+  return new Promise((resolve) => {
+    const listener = (id, info) => {
+      if (id === tabId && info.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        clearTimeout(timeout);
+        console.log('[NC] App carregado, tab:', tabId);
+        resolve();
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      console.warn('[NC] Timeout aguardando carregamento do app');
+      resolve();
+    }, timeoutMs);
+
+    chrome.tabs.onUpdated.addListener(listener);
+  });
 }
 
 // ============ INJETAR CONTENT SCRIPT NO APP ============
@@ -95,30 +100,72 @@ async function injectAppContentScript(tabId) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // Mensagens do popup
-  if (msg.type === 'GET_APP_URL') {
-    getAppUrl().then(url => sendResponse({ url }));
-    return true;
-  }
-
-  if (msg.type === 'SET_APP_URL') {
-    chrome.storage.sync.set({ appUrl: msg.url }).then(() => {
-      sendResponse({ success: true });
-    });
-    return true;
-  }
-
   if (msg.type === 'DETECT_YOUTUBE') {
     // Envia mensagem para content script do YouTube na aba ativa
-    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+    // Com re-injeção automática se o content script não responder
+    chrome.tabs.query({ active: true, currentWindow: true }).then(async ([tab]) => {
       if (!tab || !tab.url || !tab.url.includes('youtube.com')) {
         sendResponse({ context: 'none' });
         return;
       }
-      chrome.tabs.sendMessage(tab.id, { type: 'DETECT_PAGE' }).then(response => {
+
+      // Primeira tentativa
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, { type: 'DETECT_PAGE' });
+        if (response && response.context !== 'none') {
+          sendResponse(response);
+          return;
+        }
+      } catch (err) {
+        console.log('[NC] Content script não respondeu, re-injetando...');
+      }
+
+      // Re-injetar content script e tentar novamente
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content/youtube.js']
+        });
+        await new Promise(r => setTimeout(r, 500));
+        const response = await chrome.tabs.sendMessage(tab.id, { type: 'DETECT_PAGE' });
         sendResponse(response || { context: 'none' });
-      }).catch(() => {
+      } catch (err) {
+        console.warn('[NC] Falha mesmo após re-injeção:', err.message);
         sendResponse({ context: 'none' });
+      }
+    });
+    return true;
+  }
+
+  if (msg.type === 'RELOAD_TAB') {
+    // Recarrega a aba ativa e re-injeta content script após carregamento
+    chrome.tabs.query({ active: true, currentWindow: true }).then(async ([tab]) => {
+      if (!tab) {
+        sendResponse({ success: false });
+        return;
+      }
+
+      await chrome.tabs.reload(tab.id);
+
+      // Aguardar carregamento completo
+      await new Promise((resolve) => {
+        const listener = (tabId, info) => {
+          if (tabId === tab.id && info.status === 'complete') {
+            chrome.tabs.onUpdated.removeListener(listener);
+            resolve();
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+        setTimeout(() => {
+          chrome.tabs.onUpdated.removeListener(listener);
+          resolve();
+        }, 10000);
       });
+
+      // Aguardar um pouco mais para o DOM renderizar
+      await new Promise(r => setTimeout(r, 1000));
+
+      sendResponse({ success: true });
     });
     return true;
   }
@@ -142,12 +189,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 async function handleAppOperation(msg) {
   let tab = await findAppTab();
 
-  // Se app não está aberto, abrir (vai fazer redirect para o curso depois se necessário)
+  // Se app não está aberto, abrir em background (sem fechar o popup)
   if (!tab) {
-    console.log('[NC] App não está aberto, abrindo...');
-    tab = await openAppTab();
-    // Aguardar um pouco para o tab e script injetados ficarem prontos
-    await new Promise(r => setTimeout(r, 1500));
+    console.log('[NC] App não está aberto, abrindo em background...');
+    tab = await openAppTab(null, false);
+    // Aguardar SPA inicializar após carregamento da página
+    await new Promise(r => setTimeout(r, 1000));
   }
 
   // Injetar script se necessário

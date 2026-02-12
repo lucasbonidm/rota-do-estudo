@@ -63,6 +63,17 @@ const CourseView = {
         this._cacheElements();
         this._setupEventListeners();
 
+        // Escutar atualizações da extensão Chrome
+        this._onExtensionUpdate = (e) => {
+            if (e.detail?.courseId === this.state.courseId) {
+                this.state.courseData = Store.getCourse(this.state.courseId);
+                this.renderModules();
+                this.renderLessons();
+                this.updateProgressBar();
+            }
+        };
+        window.addEventListener('course-data-updated', this._onExtensionUpdate);
+
         // Initialize video preferences
         this.elements.speedControl.value = Store.getVideoSpeed();
         const isAutoplayEnabled = Store.getAutoplay();
@@ -89,6 +100,10 @@ const CourseView = {
     },
 
     leave() {
+        if (this._onExtensionUpdate) {
+            window.removeEventListener('course-data-updated', this._onExtensionUpdate);
+            this._onExtensionUpdate = null;
+        }
         // Stop video
         if (this.state.currentPlayer) {
             this.state.currentPlayer.stopVideo();
@@ -782,10 +797,16 @@ const CourseView = {
         });
     },
 
-    handleDeleteModule(moduleId) {
+    async handleDeleteModule(moduleId) {
         const mod = this.state.courseData.modules.find(m => m.id === moduleId);
         if (!mod) return;
-        if (!confirm(`Excluir "${mod.title}" e todas as suas aulas?`)) return;
+        const ok = await Dialog.confirm({
+            title: 'Excluir módulo',
+            message: `Excluir "${mod.title}" e todas as suas aulas?`,
+            confirmLabel: 'Excluir',
+            danger: true,
+        });
+        if (!ok) return;
 
         Store.deleteModule(this.state.courseId, moduleId);
         this.state.courseData = Store.getCourse(this.state.courseId);
@@ -871,12 +892,18 @@ const CourseView = {
         });
     },
 
-    handleDeleteLesson(moduleId, lessonId) {
+    async handleDeleteLesson(moduleId, lessonId) {
         const mod = this.state.courseData.modules.find(m => m.id === moduleId);
         if (!mod) return;
         const lesson = mod.lessons.find(l => l.id === lessonId);
         if (!lesson) return;
-        if (!confirm(`Excluir aula "${lesson.title}"?`)) return;
+        const ok = await Dialog.confirm({
+            title: 'Excluir aula',
+            message: `Excluir aula "${lesson.title}"?`,
+            confirmLabel: 'Excluir',
+            danger: true,
+        });
+        if (!ok) return;
 
         Store.deleteLesson(this.state.courseId, moduleId, lessonId);
         this.state.courseData = Store.getCourse(this.state.courseId);

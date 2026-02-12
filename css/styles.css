@@ -1439,6 +1439,67 @@ input:focus-visible {
   margin-top: 16px;
 }
 
+/* ============ DIALOG (confirm / alert customizados) ============ */
+.dialog-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.dialog-icon svg {
+  display: block;
+}
+
+.dialog-message {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-dialog {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-dialog-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-dialog-primary:hover {
+  background: #2563eb;
+}
+
+.btn-dialog-secondary {
+  background: var(--secondary);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+}
+.btn-dialog-secondary:hover {
+  background: var(--border);
+  color: var(--foreground);
+}
+
+.btn-dialog-danger {
+  background: #ef4444;
+  color: #fff;
+}
+.btn-dialog-danger:hover {
+  background: #dc2626;
+}
+
 /* ============ FORM ELEMENTS ============ */
 .form-label {
   display: block;
