@@ -69,9 +69,23 @@
     const videoIdMatch = url.match(/[?&]v=([\w-]{11})/);
     const videoId = videoIdMatch ? videoIdMatch[1] : '';
 
-    const title = document.querySelector(
+    // Tentar múltiplos seletores para encontrar o título (YouTube muda frequentemente)
+    let title = document.querySelector(
       'h1.ytd-watch-metadata yt-formatted-string'
-    )?.innerText.trim() || document.title.replace(' - YouTube', '').trim();
+    )?.innerText?.trim();
+
+    if (!title) {
+      title = document.querySelector('h1 yt-formatted-string')?.innerText?.trim();
+    }
+
+    if (!title) {
+      title = document.querySelector('h1.title')?.innerText?.trim();
+    }
+
+    if (!title) {
+      // Fallback: usar o title da página
+      title = document.title.replace(' - YouTube', '').trim();
+    }
 
     const cleanUrl = videoId
       ? `https://www.youtube.com/watch?v=${videoId}`
@@ -79,7 +93,7 @@
 
     return {
       type: 'video',
-      title,
+      title: title || 'Vídeo',
       url: cleanUrl,
       videoId
     };
@@ -88,44 +102,81 @@
   // ============ EXTRACAO DE PLAYLIST ============
 
   async function extractPlaylistData() {
-    const playlistTitle = document.querySelector(
+    // Tentar múltiplos seletores para encontrar o título da playlist
+    let playlistTitle = document.querySelector(
       'yt-formatted-string.ytd-playlist-header-renderer'
-    )?.innerText.trim()
-      || document.querySelector(
+    )?.innerText?.trim();
+
+    if (!playlistTitle) {
+      playlistTitle = document.querySelector(
         'ytd-playlist-panel-renderer yt-formatted-string.title'
-      )?.innerText.trim()
-      || document.querySelector(
+      )?.innerText?.trim();
+    }
+
+    if (!playlistTitle) {
+      playlistTitle = document.querySelector(
         '#header-description h3 yt-formatted-string'
-      )?.innerText.trim()
-      || 'Playlist';
+      )?.innerText?.trim();
+    }
+
+    if (!playlistTitle) {
+      playlistTitle = document.querySelector('h1 yt-formatted-string')?.innerText?.trim();
+    }
+
+    if (!playlistTitle) {
+      playlistTitle = document.querySelector('h1.title')?.innerText?.trim();
+    }
 
     const lessons = extractVisibleVideos();
 
     return {
       type: 'playlist',
-      title: playlistTitle,
+      title: playlistTitle || 'Playlist',
       totalVideos: lessons.length,
       lessons
     };
   }
 
   function extractVisibleVideos() {
-    const videoElements = document.querySelectorAll(
+    // Tentar múltiplos seletores para encontrar vídeos da playlist
+    let videoElements = document.querySelectorAll(
       'ytd-playlist-video-renderer, ytd-playlist-panel-video-renderer'
     );
+
+    // Se não encontrou, tentar seletores alternativos
+    if (videoElements.length === 0) {
+      videoElements = document.querySelectorAll('[data-video-id]');
+    }
 
     const lessons = [];
     const seenVideoIds = new Set();
 
     videoElements.forEach(el => {
-      const title = el.querySelector('#video-title')?.innerText.trim();
+      // Tentar encontrar o título
+      let title = el.querySelector('#video-title')?.innerText?.trim();
+      if (!title) {
+        title = el.querySelector('a#video-title')?.getAttribute('title')?.trim();
+      }
+      if (!title) {
+        title = el.querySelector('[role="link"]')?.innerText?.trim();
+      }
       if (!title) return;
 
-      const href = el.querySelector('a#thumbnail, a#wc-endpoint, a#video-title')?.getAttribute('href');
-      const videoIdMatch = href?.match(/[?&]v=([\w-]{11})/);
-      const videoId = videoIdMatch ? videoIdMatch[1] : '';
+      // Tentar encontrar o link do vídeo
+      let href = el.querySelector('a#thumbnail')?.getAttribute('href') ||
+                 el.querySelector('a#wc-endpoint')?.getAttribute('href') ||
+                 el.querySelector('a#video-title')?.getAttribute('href');
 
-      // Pular se ja vimos este videoId (evita duplicatas)
+      // Fallback: tentar data-video-id
+      let videoId = '';
+      if (!href) {
+        videoId = el.getAttribute('data-video-id') || '';
+      } else {
+        const videoIdMatch = href?.match(/[?&]v=([\w-]{11})/);
+        videoId = videoIdMatch ? videoIdMatch[1] : '';
+      }
+
+      // Pular se já vimos este videoId (evita duplicatas)
       if (!videoId || seenVideoIds.has(videoId)) return;
 
       seenVideoIds.add(videoId);

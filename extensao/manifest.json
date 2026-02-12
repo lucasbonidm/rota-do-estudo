@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Rota do Estudo",
   "version": "1.0.0",
-  "description": "Adicione vídeos e playlists do YouTube à sua Rota do Estudo com um clique",
+  "description": "Adicione vídeos e playlists do YouTube ao seu curso com um clique. Extensão complementar para rota-do-estudo.vercel.app",
   "author": "Lucas Boni de Mattos",
   "homepage_url": "https://github.com/lucasbonidm/rota-do-estudo",
   "permissions": [

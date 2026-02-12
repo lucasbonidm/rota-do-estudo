@@ -29,18 +29,23 @@
   async function init() {
     bindEvents();
 
-    // Carregar URL do app
-    const response = await sendMessage({ type: 'GET_APP_URL' });
-    state.appUrl = response?.url || '';
+    try {
+      // Carregar URL do app
+      const response = await sendMessage({ type: 'GET_APP_URL' });
+      state.appUrl = response?.url || '';
 
-    // Se nao tem URL configurada, mostrar config
-    if (!state.appUrl) {
-      showView('config');
-      return;
+      // Se nao tem URL configurada, mostrar config
+      if (!state.appUrl) {
+        showView('config');
+        return;
+      }
+
+      // Detectar pagina do YouTube
+      await detectPage();
+    } catch (err) {
+      console.error('[POPUP] Erro ao inicializar:', err);
+      showView('none');
     }
-
-    // Detectar pagina do YouTube
-    await detectPage();
   }
 
   // ============ DETECCAO ============
@@ -58,22 +63,24 @@
 
       if (result.context === 'video') {
         state.videoData = result;
-        document.getElementById('video-title').textContent = result.title;
+        document.getElementById('video-title').textContent = result.title || 'Vídeo sem título';
         showView('video');
         return;
       }
 
       if (result.context === 'playlist') {
         state.playlistData = result;
-        document.getElementById('playlist-title').textContent = result.title;
+        document.getElementById('playlist-title').textContent = result.title || 'Playlist sem título';
+        const count = result.totalVideos || 0;
         document.getElementById('playlist-count').textContent =
-          `${result.totalVideos} video${result.totalVideos !== 1 ? 's' : ''} encontrado${result.totalVideos !== 1 ? 's' : ''}`;
+          `${count} video${count !== 1 ? 's' : ''} encontrado${count !== 1 ? 's' : ''}`;
         showView('playlist');
         return;
       }
 
       showView('none');
-    } catch {
+    } catch (err) {
+      console.error('[POPUP] Erro ao detectar página:', err);
       showView('none');
     }
   }
