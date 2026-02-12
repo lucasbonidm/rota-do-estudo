@@ -203,15 +203,9 @@
                 </div>
             </aside>
 
-            <!-- Sidebar overlay for mobile -->
-            <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
             <!-- MAIN CONTENT -->
             <main class="main-content">
                 <header class="content-header">
-                    <button class="sidebar-trigger" id="sidebarTrigger" aria-label="Abrir menu lateral">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
-                    </button>
                     <div class="header-info">
                         <h1 id="moduleTitle" class="content-title">Selecione um modulo</h1>
                         <p id="moduleDescription" class="content-description"></p>
@@ -221,13 +215,18 @@
                 <div class="content-body">
                     <!-- Video Section -->
                     <section class="video-section">
-                        <div id="videoContainer" class="video-container">
-                            <p class="placeholder">Selecione uma aula para comecar</p>
+                        <div class="video-band">
+                            <div id="videoContainer" class="video-container">
+                                <p class="placeholder">Selecione uma aula para comecar</p>
+                            </div>
                         </div>
 
                         <div class="lesson-info">
                             <h2 id="currentLessonTitle" class="lesson-info-title">&mdash;</h2>
                             <div class="lesson-controls">
+                                <button id="theaterModeToggle" class="btn btn-ghost theater-toggle" title="Modo teatro">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8"/></svg>
+                                </button>
                                 <select id="speedControl" class="control-select-inline" title="Velocidade do vídeo">
                                     <option value="0.5">0.5x</option>
                                     <option value="0.75">0.75x</option>
@@ -252,12 +251,7 @@
                     <!-- Lesson List Panel -->
                     <aside class="lesson-panel">
                         <div class="panel-header panel-header-flex">
-                            <div class="panel-header-left">
-                                <button id="toggleLessonPanel" class="panel-toggle-btn" title="Recolher painel" aria-label="Recolher painel de aulas">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg>
-                                </button>
-                                <h2 class="panel-title">Aulas do Modulo</h2>
-                            </div>
+                            <h2 class="panel-title">Aulas do Modulo</h2>
                             <button id="addLessonBtn" class="btn-add-small" title="Adicionar aula">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                             </button>

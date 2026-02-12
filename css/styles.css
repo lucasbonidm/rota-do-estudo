@@ -116,11 +116,7 @@ body {
   transition: width var(--transition-normal), min-width var(--transition-normal);
 }
 
-/* Desktop: sidebar collapsed manually */
-.app-layout.sidebar-collapsed .sidebar {
-  width: 0;
-  min-width: 0;
-}
+
 
 .sidebar-header {
   display: flex;
@@ -439,24 +435,6 @@ kbd {
   text-overflow: ellipsis;
 }
 
-.sidebar-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  background: none;
-  border: none;
-  border-radius: var(--radius);
-  color: var(--foreground);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background var(--transition-fast);
-}
-
-.sidebar-trigger:hover {
-  background: var(--accent);
-}
 
 /* ============ CONTENT BODY ============ */
 .content-body {
@@ -579,6 +557,69 @@ kbd {
   color: var(--primary-foreground);
 }
 
+/* Theater mode toggle button */
+.theater-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  transition: all var(--transition-fast);
+}
+
+.theater-toggle.active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Video band wrapper */
+.video-band {
+  width: 100%;
+}
+
+/* Theater mode layout */
+.app-layout.theater-mode .sidebar {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+}
+
+.app-layout.theater-mode .lesson-panel {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-left: none;
+  overflow: hidden;
+}
+
+.app-layout.theater-mode .video-section {
+  padding: 0;
+  gap: 0;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Faixa escura apenas na linha do vídeo */
+.app-layout.theater-mode .video-band {
+  background: hsl(0 0% 6%);
+  display: flex;
+  justify-content: center;
+}
+
+/* Vídeo centralizado com limite de tamanho (estilo YouTube) */
+.app-layout.theater-mode .video-container {
+  max-width: min(1280px, calc((100vh - 180px) * 16 / 9), 100%);
+  width: 100%;
+  border-radius: 0;
+  border: none;
+  background: #000;
+}
+
+/* lesson-info usa o background padrão do tema */
+.app-layout.theater-mode .lesson-info {
+  max-width: min(1280px, 100%);
+  width: 100%;
+  padding: 12px 24px;
+}
+
 .lesson-controls {
   display: flex;
   gap: 12px;
@@ -664,50 +705,7 @@ kbd {
   transition: width 0.3s ease, min-width 0.3s ease;
 }
 
-.panel-header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.panel-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: none;
-  border: none;
-  border-radius: var(--radius);
-  color: var(--foreground);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background var(--transition-fast);
-}
-
-.panel-toggle-btn:hover {
-  background: var(--accent);
-}
-
-.lesson-panel.collapsed {
-  width: 48px;
-  min-width: 48px;
-}
-
-.lesson-panel.collapsed .scroll-area,
-.lesson-panel.collapsed .no-results,
-.lesson-panel.collapsed .panel-title,
-.lesson-panel.collapsed #addLessonBtn {
-  display: none;
-}
-
-.lesson-panel.collapsed .panel-header-flex {
-  justify-content: center;
-}
-
-.lesson-panel.collapsed .panel-header {
-  padding: 12px 8px;
-}
 
 .panel-header {
   padding: 12px var(--content-padding);
@@ -842,18 +840,6 @@ kbd {
   font-size: 13px;
 }
 
-/* ============ SIDEBAR OVERLAY (mobile) ============ */
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 40;
-}
-
-.sidebar-overlay.active {
-  display: block;
-}
 
 /* ============ RESPONSIVE: TABLET ============ */
 @media (max-width: 1023px) {
@@ -862,17 +848,7 @@ kbd {
   }
 
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 50;
-    width: var(--sidebar-width);
-    transform: translateX(-100%);
-    transition: transform var(--transition-normal);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
+    display: none;
   }
 
   .content-body {
@@ -901,12 +877,7 @@ kbd {
     border-top: 1px solid var(--border);
   }
 
-  .lesson-panel:not(.collapsed) {
-    width: auto;
-    min-width: auto;
-  }
-
-  .lesson-panel.collapsed {
+  .lesson-panel {
     width: auto;
     min-width: auto;
   }

@@ -62,7 +62,6 @@ const CourseView = {
 
         this._cacheElements();
         this._setupEventListeners();
-        this._setupSidebarToggle();
 
         // Initialize video preferences
         this.elements.speedControl.value = Store.getVideoSpeed();
@@ -132,11 +131,6 @@ const CourseView = {
         this.state.currentLessonId = null;
         this.state.searchQuery = '';
         this.state.filteredLessons = [];
-        // Close sidebar on mobile
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        if (sidebar) sidebar.classList.remove('open');
-        if (overlay) overlay.classList.remove('active');
     },
 
     _cacheElements() {
@@ -157,10 +151,10 @@ const CourseView = {
             backToHome: document.getElementById('backToHome'),
             addModuleBtn: document.getElementById('addModuleBtn'),
             addLessonBtn: document.getElementById('addLessonBtn'),
-            toggleLessonPanel: document.getElementById('toggleLessonPanel'),
-            lessonPanel: document.querySelector('.lesson-panel'),
             speedControl: document.getElementById('speedControl'),
-            autoplayToggle: document.getElementById('autoplayToggle')
+            autoplayToggle: document.getElementById('autoplayToggle'),
+            theaterModeToggle: document.getElementById('theaterModeToggle'),
+            appLayout: document.querySelector('.app-layout')
         };
     },
 
@@ -174,7 +168,7 @@ const CourseView = {
         this._boundHandlers.keydown = (e) => this.handleKeydown(e);
         this._boundHandlers.speedChange = (e) => this.handleSpeedChange(e);
         this._boundHandlers.autoplayToggle = () => this.handleAutoplayToggle();
-        this._boundHandlers.togglePanel = () => this.toggleLessonPanel();
+        this._boundHandlers.theaterMode = () => this.toggleTheaterMode();
 
         this.elements.searchInput.addEventListener('input', this._boundHandlers.search);
         this.elements.clearSearch.addEventListener('click', this._boundHandlers.clearSearch);
@@ -184,7 +178,7 @@ const CourseView = {
         this.elements.addLessonBtn.addEventListener('click', this._boundHandlers.addLesson);
         this.elements.speedControl.addEventListener('change', this._boundHandlers.speedChange);
         this.elements.autoplayToggle.addEventListener('click', this._boundHandlers.autoplayToggle);
-        this.elements.toggleLessonPanel.addEventListener('click', this._boundHandlers.togglePanel);
+        this.elements.theaterModeToggle.addEventListener('click', this._boundHandlers.theaterMode);
         document.addEventListener('keydown', this._boundHandlers.keydown);
     },
 
@@ -632,10 +626,10 @@ const CourseView = {
         Store.setAutoplay(isActive);
     },
 
-    toggleLessonPanel() {
-        const panel = this.elements.lessonPanel;
-        const isCollapsed = panel.classList.toggle('collapsed');
-        this.elements.toggleLessonPanel.title = isCollapsed ? 'Expandir painel' : 'Recolher painel';
+    toggleTheaterMode() {
+        const isTheater = this.elements.appLayout.classList.toggle('theater-mode');
+        this.elements.theaterModeToggle.classList.toggle('active', isTheater);
+        this.elements.theaterModeToggle.title = isTheater ? 'Sair do modo teatro' : 'Modo teatro';
     },
 
     // ============ KEYBOARD SHORTCUTS ============
@@ -652,31 +646,6 @@ const CourseView = {
         } else if (event.key === 'Escape' && this.state.searchQuery) {
             event.preventDefault();
             this.clearSearch();
-        }
-    },
-
-    // ============ SIDEBAR TOGGLE ============
-    _setupSidebarToggle() {
-        const sidebar = document.getElementById('sidebar');
-        const trigger = document.getElementById('sidebarTrigger');
-        const overlay = document.getElementById('sidebarOverlay');
-        const appLayout = document.querySelector('.app-layout');
-
-        if (trigger) {
-            trigger.addEventListener('click', () => {
-                if (window.innerWidth >= 1024) {
-                    appLayout.classList.toggle('sidebar-collapsed');
-                } else {
-                    sidebar.classList.toggle('open');
-                    if (overlay) overlay.classList.toggle('active');
-                }
-            });
-        }
-        if (overlay) {
-            overlay.addEventListener('click', () => {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('active');
-            });
         }
     },
 
