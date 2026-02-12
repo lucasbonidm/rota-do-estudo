@@ -39,8 +39,12 @@
         <rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
         <polygon points="20,18 32,24 20,30" fill="currentColor"/>
       </svg>
-      <p>Abra um video ou playlist no YouTube para comecar.</p>
+      <p id="msg-none-default">Abra um video ou playlist no YouTube para comecar.</p>
+      <p id="msg-none-retry" class="hidden" style="font-size: 12px; opacity: 0.7; margin-top: 8px;">
+        Nenhum video ou playlist foi detectado. Tente recarregar a página.
+      </p>
     </div>
+    <button id="btn-retry-detect" class="btn btn-primary btn-full hidden">Tentar Novamente</button>
     <button id="btn-open-app-none" class="btn btn-secondary">Abrir App</button>
   </section>
 
@@ -182,10 +186,6 @@
   <!-- TELA: Feedback (sucesso/erro) -->
   <section id="view-feedback" class="view hidden">
     <div id="feedback-content"></div>
-    <div class="feedback-actions">
-      <button id="btn-open-app-feedback" class="btn btn-primary">Abrir no App</button>
-      <button id="btn-close-feedback" class="btn btn-secondary">Fechar</button>
-    </div>
   </section>
 
   <script src="popup.js"></script>

@@ -10,7 +10,9 @@
       "Bash(git push:*)",
       "Bash(node --version:*)",
       "Bash(npm install:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(cd:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nImplementar fluxo responsivo conforme políticas do Google Chrome Web Store\n\nMudanças principais:\n\n1. **Remover abertura automática de abas** \\(não conforme políticas\\)\n   - Remover `ensureAppTab\\(\\)` das operações do app\n   - App só abre quando usuário clica \\(com interação\\)\n\n2. **Nova função `checkAppAvailable\\(\\)`**\n   - Verifica se app está aberto antes de tentar operação\n   - Não tenta abrir automaticamente\n\n3. **Novo fluxo `appNotOpen` no background.js**\n   - Retorna `{ appNotOpen: true, appUrl }` quando app não está aberto\n   - Popup mostra aviso visual pedindo para abrir\n\n4. **Atualizar popup.js**\n   - Novo tipo de feedback `warning` para avisos\n   - Todas as operações checam se app está aberto\n   - Botão \"Abrir App Agora\" aparece quando necessário\n\n5. **CSS nova para feedback-warning**\n   - Ícone amarelo para diferençar de sucesso/erro\n\nBenefícios:\n- ✅ Conforme política de extensões do Google\n- ✅ Navegadores não bloqueiam mais\n- ✅ Melhor UX: usuário entende o que falta fazer\n- ✅ App já abre no curso correto quando clicado\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

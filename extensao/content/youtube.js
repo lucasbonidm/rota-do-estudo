@@ -7,7 +7,8 @@
   // Listener unico para todas as mensagens
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'DETECT_PAGE') {
-      detectPage().then(sendResponse);
+      // Usar retry para melhorar detecção em SPAs como YouTube
+      detectPageWithRetry().then(sendResponse);
       return true;
     }
 
@@ -30,6 +31,29 @@
     // Mensagem nao reconhecida - nao responder
     return false;
   });
+
+  // ============ DETECCAO DE PAGINA COM RETRY ============
+
+  async function detectPageWithRetry(maxAttempts = 3, delayMs = 500) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const result = await detectPage();
+
+      // Se encontrou algo, retornar
+      if (result.context !== 'none') {
+        return result;
+      }
+
+      // Se foi a última tentativa, retornar 'none'
+      if (attempt === maxAttempts - 1) {
+        return result;
+      }
+
+      // Aguardar antes de tentar novamente
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    return { context: 'none' };
+  }
 
   // ============ DETECCAO DE PAGINA ============
 

@@ -10,7 +10,9 @@
     videoData: null,
     playlistData: null,
     appUrl: '',
-    lastCreatedCourseId: null
+    lastCreatedCourseId: null,
+    detectAttempts: 0, // Rastrear número de tentativas de detecção
+    isYouTubePage: false // Se está realmente em uma página do YouTube
   };
 
   // ============ DOM REFS ============
@@ -52,16 +54,23 @@
 
   async function detectPage() {
     showView('loading');
+    state.detectAttempts = 0;
+    state.isYouTubePage = false;
 
     try {
+      const tab = await chrome.tabs.query({ active: true, currentWindow: true });
+      const currentUrl = tab[0]?.url || '';
+      state.isYouTubePage = currentUrl.includes('youtube.com');
+
       const result = await sendMessage({ type: 'DETECT_YOUTUBE' });
 
       if (!result || result.context === 'none') {
-        showView('none');
+        showNoneView();
         return;
       }
 
       if (result.context === 'video') {
+        state.detectAttempts = 0;
         state.videoData = result;
         document.getElementById('video-title').textContent = result.title || 'Vídeo sem título';
         showView('video');
@@ -69,6 +78,7 @@
       }
 
       if (result.context === 'playlist') {
+        state.detectAttempts = 0;
         state.playlistData = result;
         document.getElementById('playlist-title').textContent = result.title || 'Playlist sem título';
         const count = result.totalVideos || 0;
@@ -78,11 +88,33 @@
         return;
       }
 
-      showView('none');
+      showNoneView();
     } catch (err) {
       console.error('[POPUP] Erro ao detectar página:', err);
-      showView('none');
+      showNoneView();
     }
+  }
+
+  // Mostrar view "none" com mensagens apropriadas
+  function showNoneView() {
+    const msgDefault = document.getElementById('msg-none-default');
+    const msgRetry = document.getElementById('msg-none-retry');
+    const btnRetry = document.getElementById('btn-retry-detect');
+
+    if (state.isYouTubePage && state.detectAttempts === 0) {
+      // Primeira vez que falha em uma página do YouTube
+      msgDefault.classList.add('hidden');
+      msgRetry.classList.remove('hidden');
+      btnRetry.classList.remove('hidden');
+      state.detectAttempts++;
+    } else {
+      // Não é YouTube ou já tentou novamente
+      msgDefault.classList.remove('hidden');
+      msgRetry.classList.add('hidden');
+      btnRetry.classList.add('hidden');
+    }
+
+    showView('none');
   }
 
   // ============ ACOES ============
@@ -113,8 +145,6 @@
     if (result?.success) {
       state.lastCreatedCourseId = result.courseId;
       showFeedback('success', 'Curso criado com sucesso!', `"${result.title}" - 1 aula`);
-    } else if (result?.appNotOpen) {
-      showFeedback('warning', 'App não está aberto', 'Para salvar o curso, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao criar curso', result?.error || 'Tente novamente');
     }
@@ -150,8 +180,6 @@
     if (result?.success) {
       state.lastCreatedCourseId = result.courseId;
       showFeedback('success', 'Curso criado com sucesso!', `"${courseName}" - ${result.totalLessons} aulas`);
-    } else if (result?.appNotOpen) {
-      showFeedback('warning', 'App não está aberto', 'Para salvar o curso, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao criar curso', result?.error || 'Tente novamente');
     }
@@ -232,8 +260,6 @@
     if (result?.success) {
       state.lastCreatedCourseId = courseId;
       showFeedback('success', 'Modulo adicionado!', `"${moduleName}" - ${lessons.length} aula${lessons.length !== 1 ? 's' : ''}`);
-    } else if (result?.appNotOpen) {
-      showFeedback('warning', 'App não está aberto', 'Para salvar o módulo, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao adicionar modulo', result?.error || 'Tente novamente');
     }
@@ -284,8 +310,6 @@
     if (result?.success) {
       state.lastCreatedCourseId = courseId;
       showFeedback('success', 'Video adicionado!', `"${data.title}"`);
-    } else if (result?.appNotOpen) {
-      showFeedback('warning', 'App não está aberto', 'Para salvar o vídeo, abra o app primeiro', result.appUrl);
     } else {
       showFeedback('error', 'Erro ao adicionar video', result?.error || 'Tente novamente');
     }
@@ -297,7 +321,6 @@
     showView('loading');
 
     let added = 0;
-    let appNotOpenError = null;
 
     for (const lesson of lessons) {
       const result = await sendMessage({
@@ -312,16 +335,12 @@
       });
       if (result?.success) {
         added++;
-      } else if (result?.appNotOpen) {
-        appNotOpenError = result;
       }
     }
 
     if (added > 0) {
       state.lastCreatedCourseId = courseId;
       showFeedback('success', 'Videos adicionados!', `${added} aula${added !== 1 ? 's' : ''} adicionada${added !== 1 ? 's' : ''}`);
-    } else if (appNotOpenError) {
-      showFeedback('warning', 'App não está aberto', 'Para salvar os vídeos, abra o app primeiro', appNotOpenError.appUrl);
     } else {
       showFeedback('error', 'Erro ao adicionar videos', 'Tente novamente');
     }
@@ -342,7 +361,7 @@
 
   // ============ FEEDBACK ============
 
-  function showFeedback(type, title, detail, appUrl = null) {
+  function showFeedback(type, title, detail) {
     const content = document.getElementById('feedback-content');
     const iconChar = type === 'success' ? '\u2713' : (type === 'error' ? '\u2717' : 'ℹ');
 
@@ -354,26 +373,32 @@
       <div class="feedback-detail">${detail}</div>
     `;
 
-    // Se for erro de app não aberto, adicionar opção de abrir
-    if (type === 'warning' && appUrl) {
-      html = `
-        <div class="feedback-icon">${iconChar}</div>
-        <div class="feedback-title">${title}</div>
-        <div class="feedback-detail">${detail}</div>
-        <button id="btn-open-app-warning" class="btn btn-primary btn-full" style="margin-top: 12px;">
-          Abrir App Agora
-        </button>
+    // Se for sucesso, adicionar botão "Visualizar Curso"
+    if (type === 'success' && state.lastCreatedCourseId) {
+      html += `
+        <div class="feedback-actions">
+          <button id="btn-visualizar-curso" class="btn btn-primary btn-full">
+            Visualizar Curso
+          </button>
+          <button id="btn-fechar-feedback" class="btn btn-secondary btn-full">
+            Fechar
+          </button>
+        </div>
       `;
     }
 
     content.innerHTML = html;
 
-    // Vincular evento se for warning com app URL
-    if (type === 'warning' && appUrl) {
+    // Vincular eventos
+    if (type === 'success' && state.lastCreatedCourseId) {
       setTimeout(() => {
-        const btn = document.getElementById('btn-open-app-warning');
-        if (btn) {
-          btn.addEventListener('click', () => openApp(state.lastCreatedCourseId));
+        const btnVisualizar = document.getElementById('btn-visualizar-curso');
+        const btnFechar = document.getElementById('btn-fechar-feedback');
+        if (btnVisualizar) {
+          btnVisualizar.addEventListener('click', () => openApp(state.lastCreatedCourseId));
+        }
+        if (btnFechar) {
+          btnFechar.addEventListener('click', () => window.close());
         }
       }, 0);
     }
@@ -411,14 +436,15 @@
       }
     });
 
+    // Retry de detecção
+    document.getElementById('btn-retry-detect').addEventListener('click', () => {
+      detectPage();
+    });
+
     // Abrir App (todos os botoes)
     document.getElementById('btn-open-app-none').addEventListener('click', () => openApp());
     document.getElementById('btn-open-app-video').addEventListener('click', () => openApp());
     document.getElementById('btn-open-app-playlist').addEventListener('click', () => openApp());
-    document.getElementById('btn-open-app-feedback').addEventListener('click', () => {
-      openApp(state.lastCreatedCourseId);
-    });
-    document.getElementById('btn-close-feedback').addEventListener('click', () => window.close());
 
     // -- Video: criar curso --
     const createVideoForm = document.getElementById('create-video-form');

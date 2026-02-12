@@ -140,27 +140,28 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // ============ OPERACOES NO APP ============
 
 async function handleAppOperation(msg) {
-  // Primeiro, verificar se app está disponível
-  const appCheck = await checkAppAvailable();
+  let tab = await findAppTab();
 
-  if (!appCheck.available) {
-    console.warn('[NC] App não está disponível');
-    const appUrl = await getAppUrl();
-    return {
-      success: false,
-      error: 'App não está aberto',
-      appNotOpen: true,
-      appUrl: appUrl
-    };
+  // Se app não está aberto, abrir (vai fazer redirect para o curso depois se necessário)
+  if (!tab) {
+    console.log('[NC] App não está aberto, abrindo...');
+    tab = await openAppTab();
+    // Aguardar um pouco para o tab e script injetados ficarem prontos
+    await new Promise(r => setTimeout(r, 1500));
   }
 
-  let tab = appCheck.tabId;
+  // Injetar script se necessário
+  try {
+    await injectAppContentScript(tab.id);
+  } catch (err) {
+    console.warn('[NC] Erro ao injetar (pode já estar injetado):', err.message);
+  }
 
-  // Tentar enviar mensagem, com retry apos reinjecao
+  // Tentar enviar mensagem, com retry
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       console.log(`[NC] Tentativa ${attempt + 1} de enviar mensagem (${msg.type})`);
-      const response = await chrome.tabs.sendMessage(tab, msg);
+      const response = await chrome.tabs.sendMessage(tab.id, msg);
       if (response) {
         console.log(`[NC] Resposta recebida:`, response);
         return response;
@@ -168,11 +169,9 @@ async function handleAppOperation(msg) {
     } catch (err) {
       console.warn(`[NC] Tentativa ${attempt + 1} falhou:`, err.message);
       if (attempt < 2) {
-        // Não é a última tentativa - tentar reinjetar e aguardar
         try {
           console.log('[NC] Reinjetando content script...');
-          await injectAppContentScript(tab);
-          // Aguardar mais tempo para script inicializar
+          await injectAppContentScript(tab.id);
           await new Promise(r => setTimeout(r, 800));
         } catch (reinjectErr) {
           console.error('[NC] Erro ao reinjetar:', reinjectErr.message);
@@ -181,7 +180,7 @@ async function handleAppOperation(msg) {
     }
   }
 
-  return { success: false, error: 'Não foi possível comunicar com o app. Verifique se https://rota-do-estudo.vercel.app está carregando corretamente.' };
+  return { success: false, error: 'Não foi possível comunicar com o app' };
 }
 
 async function openAppInCourse(courseId) {
