@@ -74,7 +74,7 @@ Você pode exportar todos os seus cursos, módulos, aulas e progresso em um úni
 
 **Tema escuro:** Clique no ícone de **engrenagem** no canto superior direito e selecione **"Modo Escuro"** ou **"Modo Claro"**.
 
-**Extensão Chrome:** Existe uma extensão que permite adicionar vídeos ao seu curso com um clique direto do YouTube. [Veja como instalar](INSTALL_EXTENSION.md).
+**Extensão Chrome:** Existe uma extensão que permite adicionar vídeos ao seu curso com um clique direto do YouTube. [Instale pela Chrome Web Store](https://chromewebstore.google.com/detail/rota-do-estudo/begpmhbipnpefoagmeblnphcegoclbco).
 
 ---
 
