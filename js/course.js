@@ -41,7 +41,8 @@ const CourseView = {
         currentLessonId: null,
         searchQuery: '',
         filteredLessons: [],
-        currentPlayer: null
+        currentPlayer: null,
+        expandedModules: new Set()
     },
 
     elements: {},
@@ -68,7 +69,6 @@ const CourseView = {
             if (e.detail?.courseId === this.state.courseId) {
                 this.state.courseData = Store.getCourse(this.state.courseId);
                 this.renderModules();
-                this.renderLessons();
                 this.updateProgressBar();
             }
         };
@@ -79,10 +79,11 @@ const CourseView = {
         const isAutoplayEnabled = Store.getAutoplay();
         this.elements.autoplayToggle.classList.toggle('active', isAutoplayEnabled);
 
-        // Update sidebar brand
+        // Update header brand
         this.elements.sidebarCourseTitle.textContent = this.state.courseData.title;
         document.title = `${this.state.courseData.title} - Rota do Estudo`;
 
+        this.state.expandedModules = new Set();
         this.renderModules();
 
         // Load specific lesson or auto-load
@@ -97,6 +98,16 @@ const CourseView = {
         }
 
         this.updateProgressBar();
+
+        // Ao carregar, expandir apenas o módulo da aula ativa e rolar até ela
+        if (this.state.currentModuleId) {
+            this.state.expandedModules = new Set([this.state.currentModuleId]);
+            this.renderModules();
+            const lessonItem = document.querySelector(`[data-lesson-id="${this.state.currentLessonId}"]`);
+            if (lessonItem) {
+                lessonItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
     },
 
     leave() {
@@ -129,23 +140,31 @@ const CourseView = {
         if (this.elements.backToHome && this._boundHandlers.backToHome) {
             this.elements.backToHome.removeEventListener('click', this._boundHandlers.backToHome);
         }
-        if (this.elements.addModuleBtn && this._boundHandlers.addModule) {
-            this.elements.addModuleBtn.removeEventListener('click', this._boundHandlers.addModule);
-        }
-        if (this.elements.addLessonBtn && this._boundHandlers.addLesson) {
-            this.elements.addLessonBtn.removeEventListener('click', this._boundHandlers.addLesson);
-        }
         if (this.elements.speedControl && this._boundHandlers.speedChange) {
             this.elements.speedControl.removeEventListener('change', this._boundHandlers.speedChange);
         }
         if (this.elements.autoplayToggle && this._boundHandlers.autoplayToggle) {
             this.elements.autoplayToggle.removeEventListener('click', this._boundHandlers.autoplayToggle);
         }
+        if (this.elements.theaterModeToggle && this._boundHandlers.theaterMode) {
+            this.elements.theaterModeToggle.removeEventListener('click', this._boundHandlers.theaterMode);
+        }
+        if (this.elements.showSidebarBtn && this._boundHandlers.showSidebar) {
+            this.elements.showSidebarBtn.removeEventListener('click', this._boundHandlers.showSidebar);
+        }
+        // Reset sidebar state
+        if (this.elements.appLayout) {
+            this.elements.appLayout.classList.remove('theater-mode');
+        }
+        if (this.elements.showSidebarBtn) {
+            this.elements.showSidebarBtn.style.display = 'none';
+        }
         // Reset state
         this.state.currentModuleId = null;
         this.state.currentLessonId = null;
         this.state.searchQuery = '';
         this.state.filteredLessons = [];
+        this.state.expandedModules = new Set();
     },
 
     _cacheElements() {
@@ -153,9 +172,6 @@ const CourseView = {
             searchInput: document.getElementById('searchInput'),
             clearSearch: document.getElementById('clearSearch'),
             moduleNav: document.getElementById('moduleNav'),
-            moduleTitle: document.getElementById('moduleTitle'),
-            moduleDescription: document.getElementById('moduleDescription'),
-            lessonList: document.getElementById('lessonList'),
             noResults: document.getElementById('noResults'),
             videoContainer: document.getElementById('videoContainer'),
             currentLessonTitle: document.getElementById('currentLessonTitle'),
@@ -164,11 +180,10 @@ const CourseView = {
             progressText: document.querySelector('#course-view .progress-text'),
             sidebarCourseTitle: document.getElementById('sidebarCourseTitle'),
             backToHome: document.getElementById('backToHome'),
-            addModuleBtn: document.getElementById('addModuleBtn'),
-            addLessonBtn: document.getElementById('addLessonBtn'),
             speedControl: document.getElementById('speedControl'),
             autoplayToggle: document.getElementById('autoplayToggle'),
             theaterModeToggle: document.getElementById('theaterModeToggle'),
+            showSidebarBtn: document.getElementById('showSidebarBtn'),
             appLayout: document.querySelector('.app-layout')
         };
     },
@@ -178,22 +193,20 @@ const CourseView = {
         this._boundHandlers.clearSearch = () => this.clearSearch();
         this._boundHandlers.markComplete = () => this.toggleLessonCompletion();
         this._boundHandlers.backToHome = () => Router.navigate('#/home');
-        this._boundHandlers.addModule = () => this.handleAddModule();
-        this._boundHandlers.addLesson = () => this.handleAddLesson();
         this._boundHandlers.keydown = (e) => this.handleKeydown(e);
         this._boundHandlers.speedChange = (e) => this.handleSpeedChange(e);
         this._boundHandlers.autoplayToggle = () => this.handleAutoplayToggle();
         this._boundHandlers.theaterMode = () => this.toggleTheaterMode();
+        this._boundHandlers.showSidebar = () => this.toggleTheaterMode();
 
         this.elements.searchInput.addEventListener('input', this._boundHandlers.search);
         this.elements.clearSearch.addEventListener('click', this._boundHandlers.clearSearch);
         this.elements.markCompleteBtn.addEventListener('click', this._boundHandlers.markComplete);
         this.elements.backToHome.addEventListener('click', this._boundHandlers.backToHome);
-        this.elements.addModuleBtn.addEventListener('click', this._boundHandlers.addModule);
-        this.elements.addLessonBtn.addEventListener('click', this._boundHandlers.addLesson);
         this.elements.speedControl.addEventListener('change', this._boundHandlers.speedChange);
         this.elements.autoplayToggle.addEventListener('click', this._boundHandlers.autoplayToggle);
         this.elements.theaterModeToggle.addEventListener('click', this._boundHandlers.theaterMode);
+        this.elements.showSidebarBtn.addEventListener('click', this._boundHandlers.showSidebar);
         document.addEventListener('keydown', this._boundHandlers.keydown);
     },
 
@@ -202,89 +215,149 @@ const CourseView = {
         const nav = this.elements.moduleNav;
         nav.innerHTML = '';
 
-        this.state.courseData.modules.forEach(mod => {
-            const btn = document.createElement('button');
-            btn.className = 'module-btn';
-            btn.setAttribute('data-module-id', mod.id);
+        if (this.state.searchQuery.trim()) {
+            this._renderSearchResults(nav);
+            return;
+        }
 
+        this.elements.noResults.style.display = 'none';
+
+        this.state.courseData.modules.forEach(mod => {
+            const isExpanded = this.state.expandedModules.has(mod.id);
+            const isActive = mod.id === this.state.currentModuleId;
             const progress = Store.getModuleProgress(this.state.courseData, mod.id);
 
-            if (mod.id === this.state.currentModuleId) {
-                btn.classList.add('active');
-            }
+            const item = document.createElement('div');
+            item.className = 'module-accordion-item' + (isExpanded ? ' expanded' : '');
+            item.setAttribute('data-module-id', mod.id);
 
-            btn.innerHTML = `
-                <div class="module-btn-content">
-                    <span class="drag-handle" title="Arrastar para reordenar"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="5" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/></svg></span>
-                    <div class="module-btn-label">${mod.title}</div>
-                    <div class="module-btn-actions">
-                        <button class="action-btn action-edit" data-action="edit-module" data-module-id="${mod.id}" title="Editar modulo">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                        </button>
-                        <button class="action-btn action-delete" data-action="delete-module" data-module-id="${mod.id}" title="Excluir modulo">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                        </button>
+            item.innerHTML = `
+                <button class="module-accordion-header${isActive ? ' active' : ''}"
+                        aria-expanded="${isExpanded}"
+                        aria-controls="lessons-${mod.id}">
+                    <div class="module-accordion-info">
+                        <div class="module-accordion-label">${mod.title}</div>
+                        <div class="module-accordion-meta">
+                            <span class="module-accordion-progress-text">${progress.completed}/${progress.total}</span>
+                            <div class="module-accordion-progress-bar">
+                                <div class="module-accordion-progress-fill" style="width: ${progress.percentage}%"></div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="module-btn-meta">
-                    <span class="module-progress-text">${progress.completed}/${progress.total}</span>
-                    <div class="module-progress-bar">
-                        <div class="module-progress-fill" style="width: ${progress.percentage}%"></div>
-                    </div>
+                    <span class="module-accordion-chevron" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </span>
+                </button>
+                <div class="module-accordion-lessons" id="lessons-${mod.id}" role="region">
                 </div>
             `;
 
-            // Module select (not on action buttons)
-            btn.addEventListener('click', (e) => {
-                if (e.target.closest('.action-btn')) return;
-                this.selectModule(mod.id);
+            const header = item.querySelector('.module-accordion-header');
+            header.addEventListener('click', () => this._toggleModuleExpand(mod.id));
+
+            const lessonsContainer = item.querySelector('.module-accordion-lessons');
+            mod.lessons.forEach(lesson => {
+                const lessonEl = document.createElement('div');
+                lessonEl.className = 'lesson-item'
+                    + (lesson.completed ? ' completed' : '')
+                    + (this.state.currentLessonId === lesson.id ? ' active' : '');
+                lessonEl.setAttribute('data-lesson-id', lesson.id);
+                lessonEl.setAttribute('role', 'button');
+                lessonEl.setAttribute('tabindex', '0');
+                lessonEl.innerHTML = `<span class="lesson-title">${lesson.title}</span>`;
+                lessonEl.addEventListener('click', () => {
+                    this.state.currentModuleId = mod.id;
+                    this._loadLesson(lesson, mod);
+                });
+                lessonsContainer.appendChild(lessonEl);
             });
 
-            // Action buttons via delegation
-            btn.addEventListener('click', (e) => {
-                const actionBtn = e.target.closest('.action-btn');
-                if (!actionBtn) return;
-                e.stopPropagation();
-                const action = actionBtn.dataset.action;
-                const moduleId = actionBtn.dataset.moduleId;
-                if (action === 'edit-module') this.handleEditModule(moduleId);
-                if (action === 'delete-module') this.handleDeleteModule(moduleId);
-            });
+            nav.appendChild(item);
+        });
+    },
 
-            nav.appendChild(btn);
+    _toggleModuleExpand(moduleId) {
+        if (this.state.expandedModules.has(moduleId)) {
+            this.state.expandedModules.delete(moduleId);
+        } else {
+            this.state.expandedModules.add(moduleId);
+        }
+        this.renderModules();
+    },
+
+    _renderSearchResults(nav) {
+        const query = this.state.searchQuery.toLowerCase();
+        let totalMatches = 0;
+
+        this.state.courseData.modules.forEach(mod => {
+            const matches = mod.lessons.filter(l =>
+                l.title.toLowerCase().includes(query)
+            );
+            if (matches.length === 0) return;
+
+            totalMatches += matches.length;
+
+            const groupLabel = document.createElement('div');
+            groupLabel.className = 'search-group-label';
+            groupLabel.textContent = mod.title;
+            nav.appendChild(groupLabel);
+
+            matches.forEach(lesson => {
+                const item = document.createElement('div');
+                item.className = 'lesson-item'
+                    + (lesson.completed ? ' completed' : '')
+                    + (this.state.currentLessonId === lesson.id ? ' active' : '');
+                item.setAttribute('data-lesson-id', lesson.id);
+                item.setAttribute('role', 'button');
+                item.setAttribute('tabindex', '0');
+                item.innerHTML = `<span class="lesson-title">${lesson.title}</span>`;
+                item.addEventListener('click', () => {
+                    this.state.currentModuleId = mod.id;
+                    this.state.expandedModules.add(mod.id);
+                    this._loadLesson(lesson, mod);
+                });
+                nav.appendChild(item);
+            });
         });
 
-        if (window.Sortable) {
-            if (this._moduleSortable) this._moduleSortable.destroy();
-            this._moduleSortable = new Sortable(nav, {
-                animation: 150,
-                handle: '.drag-handle',
-                onEnd: () => {
-                    const orderedIds = [...nav.querySelectorAll('.module-btn')].map(el => el.dataset.moduleId);
-                    Store.reorderModules(this.state.courseId, orderedIds);
-                    this.state.courseData = Store.getCourse(this.state.courseId);
-                }
-            });
+        this.elements.noResults.style.display = totalMatches === 0 ? 'block' : 'none';
+    },
+
+    _refreshLessonStates() {
+        if (this.state.searchQuery.trim()) {
+            this.renderModules();
+            return;
         }
+
+        this.state.courseData.modules.forEach(mod => {
+            mod.lessons.forEach(lesson => {
+                const el = document.querySelector(`[data-lesson-id="${lesson.id}"]`);
+                if (!el) return;
+                el.classList.toggle('completed', lesson.completed);
+                el.classList.toggle('active', lesson.id === this.state.currentLessonId);
+            });
+
+            const accordionItem = document.querySelector(`.module-accordion-item[data-module-id="${mod.id}"]`);
+            if (!accordionItem) return;
+            const progress = Store.getModuleProgress(this.state.courseData, mod.id);
+            const progressText = accordionItem.querySelector('.module-accordion-progress-text');
+            const progressFill = accordionItem.querySelector('.module-accordion-progress-fill');
+            if (progressText) progressText.textContent = `${progress.completed}/${progress.total}`;
+            if (progressFill) progressFill.style.width = `${progress.percentage}%`;
+        });
     },
 
     selectModule(moduleId) {
         this.state.currentModuleId = moduleId;
-        this.state.currentLessonId = null;
+        this.state.expandedModules.add(moduleId);
         this.state.searchQuery = '';
         this.elements.searchInput.value = '';
         this.elements.clearSearch.style.display = 'none';
 
-        const mod = this.state.courseData.modules.find(m => m.id === moduleId);
-        if (mod) {
-            this.elements.moduleTitle.textContent = mod.title;
-            this.elements.moduleDescription.textContent = mod.description || '';
-        }
-
         this.renderModules();
-        this.renderLessons();
 
         // Load first incomplete lesson
+        const mod = this.state.courseData.modules.find(m => m.id === moduleId);
         if (mod) {
             const firstIncomplete = mod.lessons.find(l => !l.completed);
             const target = firstIncomplete || mod.lessons[0];
@@ -293,83 +366,6 @@ const CourseView = {
             } else {
                 this._clearVideoPanel();
             }
-        }
-    },
-
-    // ============ LESSON RENDERING ============
-    renderLessons() {
-        const mod = this.state.courseData.modules.find(m => m.id === this.state.currentModuleId);
-        if (!mod) return;
-
-        let lessons = mod.lessons;
-        if (this.state.searchQuery.trim()) {
-            lessons = lessons.filter(l =>
-                l.title.toLowerCase().includes(this.state.searchQuery.toLowerCase())
-            );
-        }
-        this.state.filteredLessons = lessons;
-
-        const list = this.elements.lessonList;
-        list.innerHTML = '';
-
-        if (lessons.length === 0) {
-            this.elements.noResults.style.display = 'block';
-            return;
-        }
-        this.elements.noResults.style.display = 'none';
-
-        lessons.forEach(lesson => {
-            const item = document.createElement('div');
-            item.className = 'lesson-item';
-            item.setAttribute('data-lesson-id', lesson.id);
-
-            if (lesson.completed) item.classList.add('completed');
-            if (this.state.currentLessonId === lesson.id) item.classList.add('active');
-
-            item.innerHTML = `
-                <span class="drag-handle" title="Arrastar para reordenar"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="5" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/></svg></span>
-                <span class="lesson-number">${lesson.number}</span>
-                <span class="lesson-title">${lesson.title}</span>
-                <div class="lesson-actions">
-                    <button class="action-btn action-edit" data-action="edit-lesson" data-lesson-id="${lesson.id}" title="Editar aula">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                    </button>
-                    <button class="action-btn action-delete" data-action="delete-lesson" data-lesson-id="${lesson.id}" title="Excluir aula">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                    </button>
-                </div>
-            `;
-
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.action-btn')) return;
-                this._loadLesson(lesson, mod);
-            });
-
-            item.addEventListener('click', (e) => {
-                const actionBtn = e.target.closest('.action-btn');
-                if (!actionBtn) return;
-                e.stopPropagation();
-                const action = actionBtn.dataset.action;
-                const lessonId = actionBtn.dataset.lessonId;
-                if (action === 'edit-lesson') this.handleEditLesson(this.state.currentModuleId, lessonId);
-                if (action === 'delete-lesson') this.handleDeleteLesson(this.state.currentModuleId, lessonId);
-            });
-
-            list.appendChild(item);
-        });
-
-        if (window.Sortable && !this.state.searchQuery.trim()) {
-            if (this._lessonSortable) this._lessonSortable.destroy();
-            this._lessonSortable = new Sortable(list, {
-                animation: 150,
-                handle: '.drag-handle',
-                onEnd: () => {
-                    const orderedIds = [...list.querySelectorAll('.lesson-item')].map(el => el.dataset.lessonId);
-                    Store.reorderLessons(this.state.courseId, this.state.currentModuleId, orderedIds);
-                    this.state.courseData = Store.getCourse(this.state.courseId);
-                    this.renderLessons();
-                }
-            });
         }
     },
 
@@ -407,7 +403,7 @@ const CourseView = {
 
         this.elements.currentLessonTitle.textContent = `${lesson.number}. ${lesson.title}`;
 
-        this.renderLessons();
+        this._refreshLessonStates();
         this._updateMarkCompleteButton();
 
         const lessonItem = document.querySelector(`[data-lesson-id="${lesson.id}"]`);
@@ -472,10 +468,9 @@ const CourseView = {
         // Reload course data
         this.state.courseData = Store.getCourse(this.state.courseId);
 
-        this.renderLessons();
+        this.renderModules();
         this._updateMarkCompleteButton();
         this.updateProgressBar();
-        this.renderModules();
 
         if (isNowCompleted) {
             this.handleNextLesson();
@@ -567,14 +562,14 @@ const CourseView = {
     handleSearch(event) {
         this.state.searchQuery = event.target.value.trim();
         this.elements.clearSearch.style.display = this.state.searchQuery ? 'flex' : 'none';
-        this.renderLessons();
+        this.renderModules();
     },
 
     clearSearch() {
         this.state.searchQuery = '';
         this.elements.searchInput.value = '';
         this.elements.clearSearch.style.display = 'none';
-        this.renderLessons();
+        this.renderModules();
     },
 
     // ============ NAVIGATION ============
@@ -642,9 +637,8 @@ const CourseView = {
     },
 
     toggleTheaterMode() {
-        const isTheater = this.elements.appLayout.classList.toggle('theater-mode');
-        this.elements.theaterModeToggle.classList.toggle('active', isTheater);
-        this.elements.theaterModeToggle.title = isTheater ? 'Sair do modo teatro' : 'Modo teatro';
+        const isHidden = this.elements.appLayout.classList.toggle('theater-mode');
+        this.elements.showSidebarBtn.style.display = isHidden ? '' : 'none';
     },
 
     // ============ KEYBOARD SHORTCUTS ============
@@ -662,292 +656,6 @@ const CourseView = {
             event.preventDefault();
             this.clearSearch();
         }
-    },
-
-    // ============ CRUD: MODULES ============
-    handleAddModule() {
-        this._openInlineModal('Adicionar Modulo', `
-            <div class="inline-modal-tabs">
-                <button class="inline-modal-tab active" data-tab="manual">Manual</button>
-                <button class="inline-modal-tab" data-tab="import">Importar JSON</button>
-            </div>
-            <div id="inlineTabManual" class="inline-tab-content active">
-                <label class="form-label" for="newModuleTitle">Nome do modulo</label>
-                <input id="newModuleTitle" type="text" class="form-input" placeholder="Ex: Modulo 6 - Avancado" autocomplete="off">
-                <label class="form-label" for="newModuleDesc" style="margin-top:12px">Descricao (opcional)</label>
-                <input id="newModuleDesc" type="text" class="form-input" placeholder="Descricao do modulo" autocomplete="off">
-                <button id="confirmAddModule" class="btn btn-primary modal-action">Adicionar</button>
-            </div>
-            <div id="inlineTabImport" class="inline-tab-content">
-                <div class="import-help">
-                    <p class="import-help-title">Como obter o JSON da playlist:</p>
-                    <ol class="import-steps">
-                        <li>Abra a <strong>playlist</strong> no YouTube</li>
-                        <li>Role ate o final para carregar todos os videos</li>
-                        <li>Pressione <kbd>F12</kbd> para abrir o DevTools</li>
-                        <li>Va na aba <strong>Console</strong></li>
-                        <li>Cole o codigo abaixo e pressione <kbd>Enter</kbd></li>
-                        <li>Copie o JSON gerado e cole no campo abaixo</li>
-                    </ol>
-                    <div class="code-template">
-                        <div class="code-template-header">
-                            <span>Codigo para o Console</span>
-                            <button type="button" id="copyModuleScript" class="btn btn-ghost btn-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                                <span>Copiar</span>
-                            </button>
-                        </div>
-                        <pre class="code-template-code" id="moduleScriptCode"></pre>
-                    </div>
-                </div>
-                <label class="form-label" for="importModuleJson" style="margin-top:16px">Cole o JSON gerado aqui</label>
-                <textarea id="importModuleJson" class="form-textarea" rows="6" placeholder='{"title": "...", "lessons": [...]}'></textarea>
-                <div id="importModuleError" class="form-error" style="display: none;"></div>
-                <button id="confirmImportModule" class="btn btn-primary modal-action">Importar Modulo</button>
-            </div>
-        `, () => {
-            // Tab switching
-            const tabs = document.querySelectorAll('.inline-modal-tab');
-            tabs.forEach(tab => {
-                tab.onclick = () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.getElementById('inlineTabManual').classList.toggle('active', tab.dataset.tab === 'manual');
-                    document.getElementById('inlineTabImport').classList.toggle('active', tab.dataset.tab === 'import');
-                };
-            });
-
-            // Manual add
-            document.getElementById('confirmAddModule').addEventListener('click', () => {
-                const title = document.getElementById('newModuleTitle').value.trim();
-                if (!title) return;
-                const desc = document.getElementById('newModuleDesc').value.trim();
-                Store.addModule(this.state.courseId, title, desc);
-                this.state.courseData = Store.getCourse(this.state.courseId);
-                this.renderModules();
-                this.updateProgressBar();
-                this._closeInlineModal();
-            });
-
-            // Populate module script code
-            const codeEl = document.getElementById('moduleScriptCode');
-            if (codeEl) codeEl.textContent = MODULE_IMPORT_SCRIPT;
-
-            // Copy script button
-            const copyBtn = document.getElementById('copyModuleScript');
-            if (copyBtn) {
-                copyBtn.onclick = () => {
-                    navigator.clipboard.writeText(MODULE_IMPORT_SCRIPT).then(() => {
-                        const span = copyBtn.querySelector('span');
-                        span.textContent = 'Copiado!';
-                        setTimeout(() => span.textContent = 'Copiar', 2000);
-                    });
-                };
-            }
-
-            // Import module
-            document.getElementById('confirmImportModule').addEventListener('click', () => {
-                const jsonStr = document.getElementById('importModuleJson').value.trim();
-                const errorEl = document.getElementById('importModuleError');
-                errorEl.style.display = 'none';
-                if (!jsonStr) return;
-
-                try {
-                    const data = JSON.parse(jsonStr);
-                    if (!data.title && !data.lessons) {
-                        throw new Error('JSON deve conter "title" e "lessons".');
-                    }
-                    Store.importModule(this.state.courseId, data);
-                    this.state.courseData = Store.getCourse(this.state.courseId);
-                    this.renderModules();
-                    this.updateProgressBar();
-                    this._closeInlineModal();
-                } catch (err) {
-                    errorEl.textContent = 'Erro: ' + err.message;
-                    errorEl.style.display = 'block';
-                }
-            });
-        }, { wide: true });
-    },
-
-    handleEditModule(moduleId) {
-        const mod = this.state.courseData.modules.find(m => m.id === moduleId);
-        if (!mod) return;
-
-        this._openInlineModal('Editar Modulo', `
-            <label class="form-label" for="editModuleTitle">Nome do modulo</label>
-            <input id="editModuleTitle" type="text" class="form-input" value="${mod.title}" autocomplete="off">
-            <label class="form-label" for="editModuleDesc" style="margin-top:12px">Descricao</label>
-            <input id="editModuleDesc" type="text" class="form-input" value="${mod.description || ''}" autocomplete="off">
-            <button id="confirmEditModule" class="btn btn-primary modal-action">Salvar</button>
-        `, () => {
-            document.getElementById('confirmEditModule').addEventListener('click', () => {
-                const title = document.getElementById('editModuleTitle').value.trim();
-                if (!title) return;
-                const desc = document.getElementById('editModuleDesc').value.trim();
-                Store.updateModule(this.state.courseId, moduleId, { title, description: desc });
-                this.state.courseData = Store.getCourse(this.state.courseId);
-                this.renderModules();
-                if (this.state.currentModuleId === moduleId) {
-                    this.elements.moduleTitle.textContent = title;
-                    this.elements.moduleDescription.textContent = desc;
-                }
-                this._closeInlineModal();
-            });
-        });
-    },
-
-    async handleDeleteModule(moduleId) {
-        const mod = this.state.courseData.modules.find(m => m.id === moduleId);
-        if (!mod) return;
-        const ok = await Dialog.confirm({
-            title: 'Excluir módulo',
-            message: `Excluir "${mod.title}" e todas as suas aulas?`,
-            confirmLabel: 'Excluir',
-            danger: true,
-        });
-        if (!ok) return;
-
-        Store.deleteModule(this.state.courseId, moduleId);
-        this.state.courseData = Store.getCourse(this.state.courseId);
-        this.renderModules();
-        this.updateProgressBar();
-
-        if (this.state.currentModuleId === moduleId) {
-            if (this.state.courseData.modules.length > 0) {
-                this.selectModule(this.state.courseData.modules[0].id);
-            } else {
-                this.elements.moduleTitle.textContent = 'Nenhum modulo';
-                this.elements.moduleDescription.textContent = '';
-                this.elements.lessonList.innerHTML = '';
-                this._clearVideoPanel();
-            }
-        }
-    },
-
-    // ============ CRUD: LESSONS ============
-    handleAddLesson() {
-        if (!this.state.currentModuleId) return;
-
-        this._openInlineModal('Adicionar Aula', `
-            <label class="form-label" for="newLessonTitle">Titulo da aula</label>
-            <input id="newLessonTitle" type="text" class="form-input" placeholder="Ex: Introducao ao Flexbox" autocomplete="off">
-            <label class="form-label" for="newLessonUrl" style="margin-top:12px">URL do YouTube</label>
-            <input id="newLessonUrl" type="url" class="form-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-            <button id="confirmAddLesson" class="btn btn-primary modal-action">Adicionar</button>
-        `, () => {
-            document.getElementById('confirmAddLesson').addEventListener('click', () => {
-                const title = document.getElementById('newLessonTitle').value.trim();
-                if (!title) return;
-                const url = document.getElementById('newLessonUrl').value.trim();
-                Store.addLesson(this.state.courseId, this.state.currentModuleId, title, url);
-                this.state.courseData = Store.getCourse(this.state.courseId);
-                this.renderLessons();
-                this.renderModules();
-                this.updateProgressBar();
-                this._closeInlineModal();
-            });
-        });
-    },
-
-    handleEditLesson(moduleId, lessonId) {
-        const mod = this.state.courseData.modules.find(m => m.id === moduleId);
-        if (!mod) return;
-        const lesson = mod.lessons.find(l => l.id === lessonId);
-        if (!lesson) return;
-
-        const moduleOptions = this.state.courseData.modules.map(m =>
-            `<option value="${m.id}"${m.id === moduleId ? ' selected' : ''}>${m.title}</option>`
-        ).join('');
-
-        this._openInlineModal('Editar Aula', `
-            <label class="form-label" for="editLessonTitle">Titulo</label>
-            <input id="editLessonTitle" type="text" class="form-input" value="${lesson.title}" autocomplete="off">
-            <label class="form-label" for="editLessonUrl" style="margin-top:12px">URL do YouTube</label>
-            <input id="editLessonUrl" type="url" class="form-input" value="${lesson.url || ''}" autocomplete="off">
-            <label class="form-label" for="editLessonModule" style="margin-top:12px">Módulo</label>
-            <select id="editLessonModule" class="form-input">${moduleOptions}</select>
-            <button id="confirmEditLesson" class="btn btn-primary modal-action">Salvar</button>
-        `, () => {
-            document.getElementById('confirmEditLesson').addEventListener('click', () => {
-                const title = document.getElementById('editLessonTitle').value.trim();
-                if (!title) return;
-                const url = document.getElementById('editLessonUrl').value.trim();
-                const newModuleId = document.getElementById('editLessonModule').value;
-                Store.updateLesson(this.state.courseId, moduleId, lessonId, { title, url });
-                if (newModuleId !== moduleId) {
-                    Store.moveLesson(this.state.courseId, moduleId, newModuleId, lessonId);
-                }
-                this.state.courseData = Store.getCourse(this.state.courseId);
-                this.renderLessons();
-                if (this.state.currentLessonId === lessonId) {
-                    const updatedLesson = this._findLessonById(lessonId);
-                    if (updatedLesson) {
-                        const updatedMod = this.state.courseData.modules.find(m => m.id === newModuleId);
-                        this._loadLesson(updatedLesson, updatedMod);
-                    }
-                }
-                this._closeInlineModal();
-            });
-        });
-    },
-
-    async handleDeleteLesson(moduleId, lessonId) {
-        const mod = this.state.courseData.modules.find(m => m.id === moduleId);
-        if (!mod) return;
-        const lesson = mod.lessons.find(l => l.id === lessonId);
-        if (!lesson) return;
-        const ok = await Dialog.confirm({
-            title: 'Excluir aula',
-            message: `Excluir aula "${lesson.title}"?`,
-            confirmLabel: 'Excluir',
-            danger: true,
-        });
-        if (!ok) return;
-
-        Store.deleteLesson(this.state.courseId, moduleId, lessonId);
-        this.state.courseData = Store.getCourse(this.state.courseId);
-        this.renderLessons();
-        this.renderModules();
-        this.updateProgressBar();
-
-        if (this.state.currentLessonId === lessonId) {
-            this._clearVideoPanel();
-            this.state.currentLessonId = null;
-        }
-    },
-
-    // ============ INLINE MODAL HELPERS ============
-    _openInlineModal(title, bodyHtml, onMount, options) {
-        const overlay = document.getElementById('inlineModalOverlay');
-        const modalEl = overlay.querySelector('.modal');
-        const titleEl = document.getElementById('inlineModalTitle');
-        const body = document.getElementById('inlineModalBody');
-        const closeBtn = document.getElementById('inlineModalClose');
-
-        titleEl.textContent = title;
-        body.innerHTML = bodyHtml;
-        overlay.style.display = 'flex';
-
-        // Handle modal size
-        modalEl.classList.toggle('modal-small', !(options && options.wide));
-
-        closeBtn.onclick = () => this._closeInlineModal();
-        overlay.onclick = (e) => {
-            if (e.target === overlay) this._closeInlineModal();
-        };
-
-        if (onMount) onMount();
-
-        // Focus first input
-        const firstInput = body.querySelector('input, textarea');
-        if (firstInput) setTimeout(() => firstInput.focus(), 50);
-    },
-
-    _closeInlineModal() {
-        const overlay = document.getElementById('inlineModalOverlay');
-        overlay.style.display = 'none';
-        overlay.querySelector('.modal').classList.add('modal-small');
     },
 
     // ============ HELPERS ============

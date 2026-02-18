@@ -167,7 +167,7 @@ const HomeView = {
                 </div>
             </div>
             <div class="course-card-footer">
-                <button class="btn btn-ghost btn-sm edit-course-btn" data-course-id="${course.id}" title="Editar nome do curso">
+                <button class="btn btn-ghost btn-sm edit-course-btn" data-course-id="${course.id}" title="Editar curso">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                 </button>
                 <button class="btn btn-ghost btn-sm export-course-btn" data-course-id="${course.id}" title="Exportar JSON">
@@ -252,6 +252,7 @@ const HomeView = {
                 tab.classList.add('active');
                 document.getElementById('tabManual').classList.toggle('active', tab.dataset.tab === 'manual');
                 document.getElementById('tabImport').classList.toggle('active', tab.dataset.tab === 'import');
+                document.getElementById('tabExtension').classList.toggle('active', tab.dataset.tab === 'extension');
             };
         });
 
@@ -267,7 +268,7 @@ const HomeView = {
             if (!title) return;
             const courseId = Store.createCourse(title);
             this._closeModal();
-            Router.navigate(`#/course/${courseId}`);
+            Router.navigate(`#/course-editor/${courseId}`);
         };
 
         // Import course
@@ -285,7 +286,7 @@ const HomeView = {
                 }
                 const courseId = Store.importCourse(data);
                 this._closeModal();
-                Router.navigate(`#/course/${courseId}`);
+                Router.navigate(`#/course-editor/${courseId}`);
             } catch (err) {
                 errorEl.textContent = `Erro: ${err.message}`;
                 errorEl.style.display = 'block';
@@ -302,6 +303,7 @@ const HomeView = {
         tabs[0].classList.add('active');
         document.getElementById('tabManual').classList.add('active');
         document.getElementById('tabImport').classList.remove('active');
+        document.getElementById('tabExtension').classList.remove('active');
 
         // Populate import script code
         const codeEl = document.getElementById('courseScriptCode');
@@ -327,37 +329,8 @@ const HomeView = {
     },
 
     // ============ ACTIONS ============
-    _handleEditCourse(courseId, currentTitle) {
-        const overlay = document.getElementById('inlineModalOverlay');
-        const titleEl = document.getElementById('inlineModalTitle');
-        const body = document.getElementById('inlineModalBody');
-        const closeBtn = document.getElementById('inlineModalClose');
-
-        titleEl.textContent = 'Editar Curso';
-        body.innerHTML = `
-            <label class="form-label" for="editCourseTitleInput">Nome do curso</label>
-            <input id="editCourseTitleInput" type="text" class="form-input" value="${currentTitle}" autocomplete="off">
-            <button id="confirmEditCourse" class="btn btn-primary modal-action">Salvar</button>
-        `;
-        overlay.style.display = 'flex';
-
-        const closeModal = () => { overlay.style.display = 'none'; };
-        closeBtn.onclick = closeModal;
-        overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
-
-        document.getElementById('confirmEditCourse').addEventListener('click', () => {
-            const newTitle = document.getElementById('editCourseTitleInput').value.trim();
-            if (!newTitle) return;
-            Store.updateCourseTitle(courseId, newTitle);
-            closeModal();
-            this.renderCourseGrid();
-        });
-
-        setTimeout(() => {
-            const input = document.getElementById('editCourseTitleInput');
-            input.focus();
-            input.select();
-        }, 50);
+    _handleEditCourse(courseId) {
+        Router.navigate('#/course-editor/' + courseId);
     },
 
     async _handleDeleteCourse(courseId, title) {

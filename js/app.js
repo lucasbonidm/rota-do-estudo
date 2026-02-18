@@ -19,6 +19,7 @@ function initApp() {
     // 4. Register routes
     Router.register('/home', HomeView);
     Router.register('/course/:courseId', CourseView);
+    Router.register('/course-editor/:courseId', CourseEditorView);
 
     // 5. Start router
     Router.init();

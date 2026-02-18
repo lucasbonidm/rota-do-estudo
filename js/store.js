@@ -296,7 +296,7 @@ const Store = {
         if (!mod) return { completed: 0, total: 0, percentage: 0 };
         const total = mod.lessons.length;
         const completed = mod.lessons.filter(l => l.completed).length;
-        return { completed, total, percentage: total > 0 ? (completed / total) * 100 : 0 };
+        return { completed, total, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
     },
 
     _calcProgress(course) {
@@ -308,7 +308,7 @@ const Store = {
                 if (l.completed) completed++;
             });
         });
-        return { completed, total, percentage: total > 0 ? (completed / total) * 100 : 0 };
+        return { completed, total, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
     },
 
     _getCourseThumbnail(course) {

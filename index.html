@@ -15,7 +15,7 @@
     <!-- ===== HOME VIEW ===== -->
     <div id="home-view" class="view">
         <div class="home-layout">
-            <header class="home-header">
+            <header class="content-header">
                 <div class="home-brand">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
                     <h1 class="home-title">Rota do Estudo</h1>
@@ -83,7 +83,7 @@
             </main>
             <footer class="home-footer">
                 <p>
-                    Feito por <a href="https://github.com/lucasbonidm" target="_blank" rel="noopener noreferrer">Lucas Boni</a>
+                    Feito por <a href="https://leadix.app/links/lucasboni" target="_blank" rel="noopener noreferrer">Lucas Boni</a>
                     •
                     <a href="https://github.com/lucasbonidm/rota-do-estudo/blob/main/README.md" target="_blank" rel="noopener noreferrer">Aprenda como usar</a>
                     •
@@ -105,6 +105,7 @@
             <div class="modal-tabs">
                 <button class="modal-tab active" data-tab="manual">Manual</button>
                 <button class="modal-tab" data-tab="import">Importar JSON</button>
+                <button class="modal-tab" data-tab="extension">Usar Extensão</button>
             </div>
             <div class="modal-body">
                 <!-- Manual Tab -->
@@ -112,6 +113,14 @@
                     <label class="form-label" for="courseTitleInput">Nome do curso</label>
                     <input id="courseTitleInput" type="text" class="form-input" placeholder="Ex: JavaScript Completo" autocomplete="off">
                     <button id="createCourseBtn" class="btn btn-primary modal-action">Criar Curso</button>
+                </div>
+                <!-- Extension Tab -->
+                <div id="tabExtension" class="tab-content">
+                    <div class="extension-promo">
+                        <img src="docs/screenshots/Rota%20do%20Estudo.png" alt="Extensão Rota do Estudo" class="extension-screenshot">
+                        <p class="extension-promo-desc">Com a extensão do Chrome, importe playlists do YouTube diretamente, sem precisar do Console DevTools.</p>
+                        <a href="https://chromewebstore.google.com/detail/rota-do-estudo/begpmhbipnpefoagmeblnphcegoclbco" target="_blank" rel="noopener noreferrer" class="btn btn-primary extension-install-btn">Instalar Extensão no Chrome</a>
+                    </div>
                 </div>
                 <!-- Import Tab -->
                 <div id="tabImport" class="tab-content">
@@ -149,67 +158,16 @@
     <div id="course-view" class="view">
         <div class="app-layout">
 
-            <!-- LEFT SIDEBAR -->
-            <aside class="sidebar" id="sidebar">
-                <div class="sidebar-header">
-                    <div class="sidebar-brand">
-                        <button id="backToHome" class="btn-back" title="Voltar para cursos" aria-label="Voltar para lista de cursos">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                        </button>
-                        <span id="sidebarCourseTitle">Curso</span>
-                    </div>
-                </div>
-
-                <div class="sidebar-content">
-                    <!-- Search -->
-                    <div class="sidebar-group">
-                        <div class="search-field">
-                            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                            <input type="search" id="searchInput" placeholder="Buscar aulas..." aria-label="Buscar aulas por titulo">
-                            <button id="clearSearch" class="search-clear" aria-label="Limpar busca" style="display: none;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Overall Progress -->
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Progresso Geral</div>
-                        <div class="progress-container">
-                            <div class="progress-track">
-                                <div class="progress-fill"></div>
-                            </div>
-                            <span class="progress-text">0/0 aulas concluidas</span>
-                        </div>
-                    </div>
-
-                    <!-- Module Navigation -->
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label sidebar-group-label-flex">
-                            <span>Modulos</span>
-                            <button id="addModuleBtn" class="btn-add-small" title="Adicionar modulo">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                            </button>
-                        </div>
-                        <nav id="moduleNav" role="navigation" aria-label="Navegacao de modulos"></nav>
-                    </div>
-                </div>
-
-                <div class="sidebar-footer">
-                    <div class="shortcuts-hint">
-                        <span><kbd>Alt</kbd><kbd>&rarr;</kbd> Proxima</span>
-                        <span><kbd>Alt</kbd><kbd>M</kbd> Concluir</span>
-                    </div>
-                </div>
-            </aside>
-
             <!-- MAIN CONTENT -->
             <main class="main-content">
                 <header class="content-header">
-                    <div class="header-info">
-                        <h1 id="moduleTitle" class="content-title">Selecione um modulo</h1>
-                        <p id="moduleDescription" class="content-description"></p>
-                    </div>
+                    <button id="backToHome" class="btn btn-icon btn-ghost" title="Voltar para cursos" aria-label="Voltar para lista de cursos">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    </button>
+                    <span id="sidebarCourseTitle" class="content-course-title">Curso</span>
+                    <button id="showSidebarBtn" class="btn btn-ghost btn-icon" title="Mostrar menu" aria-label="Mostrar menu lateral" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
+                    </button>
                 </header>
 
                 <div class="content-body">
@@ -224,9 +182,6 @@
                         <div class="lesson-info">
                             <h2 id="currentLessonTitle" class="lesson-info-title">&mdash;</h2>
                             <div class="lesson-controls">
-                                <button id="theaterModeToggle" class="btn btn-ghost theater-toggle" title="Modo teatro">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2H8"/></svg>
-                                </button>
                                 <select id="speedControl" class="control-select-inline" title="Velocidade do vídeo">
                                     <option value="0.5">0.5x</option>
                                     <option value="0.75">0.75x</option>
@@ -248,34 +203,59 @@
                         </div>
                     </section>
 
-                    <!-- Lesson List Panel -->
-                    <aside class="lesson-panel">
-                        <div class="panel-header panel-header-flex">
-                            <h2 class="panel-title">Aulas do Modulo</h2>
-                            <button id="addLessonBtn" class="btn-add-small" title="Adicionar aula">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                            </button>
-                        </div>
-                        <div class="scroll-area">
-                            <div id="lessonList" class="lesson-list" role="region" aria-label="Lista de aulas"></div>
-                        </div>
-                        <div id="noResults" class="no-results" style="display: none;">
-                            <p>Nenhuma aula encontrada.</p>
-                        </div>
-                    </aside>
                 </div>
             </main>
 
+            <!-- RIGHT SIDEBAR -->
+            <aside class="right-sidebar" id="rightSidebar">
+                <div class="sidebar-header">
+                    <span class="sidebar-brand">Aulas</span>
+                    <button id="theaterModeToggle" class="btn btn-ghost btn-icon" title="Ocultar menu" aria-label="Ocultar menu lateral">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
+                    </button>
+                </div>
+                <div class="sidebar-content">
+                    <!-- Search (global, todos os modulos) -->
+                    <div class="sidebar-group">
+                        <div class="search-field">
+                            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="search" id="searchInput" placeholder="Buscar aulas..." aria-label="Buscar aulas por titulo">
+                            <button id="clearSearch" class="search-clear" aria-label="Limpar busca" style="display: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progresso Geral -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Progresso Geral</div>
+                        <div class="progress-container">
+                            <div class="progress-track">
+                                <div class="progress-fill"></div>
+                            </div>
+                            <span class="progress-text">0/0 aulas concluidas</span>
+                        </div>
+                    </div>
+
+                    <!-- Modulos + Aulas (accordion) -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Modulos</div>
+                        <nav id="moduleNav" role="navigation" aria-label="Navegacao de modulos"></nav>
+                        <div id="noResults" class="no-results" style="display: none;">
+                            <p>Nenhuma aula encontrada.</p>
+                        </div>
+                    </div>
+                </div>
+
+
+            </aside>
+
         </div>
-        <footer class="course-footer">
-            <p>
-                Feito por <a href="https://github.com/lucasbonidm" target="_blank" rel="noopener noreferrer">Lucas Boni</a>
-                •
-                <a href="https://github.com/lucasbonidm/navegador-curso/blob/main/README.md" target="_blank" rel="noopener noreferrer">Aprenda como usar</a>
-                •
-                <a href="https://chromewebstore.google.com/detail/rota-do-estudo/begpmhbipnpefoagmeblnphcegoclbco" target="_blank" rel="noopener noreferrer">Instale nossa extensão</a>
-            </p>
-        </footer>
+    </div>
+
+    <!-- ===== COURSE EDITOR VIEW ===== -->
+    <div id="course-editor-view" class="view">
+        <!-- Content rendered dynamically by CourseEditorView -->
     </div>
 
     <!-- ===== INLINE FORM MODAL (for adding lessons/modules) ===== -->
@@ -324,6 +304,7 @@
     <script src="js/router.js"></script>
     <script src="js/home.js"></script>
     <script src="js/course.js"></script>
+    <script src="js/course-editor.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
