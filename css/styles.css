@@ -642,7 +642,7 @@ kbd {
 
 /* Faixa escura apenas na linha do vídeo */
 .app-layout.theater-mode .video-band {
-  background: hsl(0, 0%, 0%);
+  background: var(--background);
   display: flex;
   justify-content: center;
 }
