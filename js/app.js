@@ -1,3 +1,38 @@
+// ============ SHARED UTILITIES ============
+
+/**
+ * Configura troca de abas em modais.
+ * @param {NodeList|Array} tabs - Botões de aba com data-tab
+ * @param {Object} contentIdMap - Mapa { 'nomeTab': 'idDoElemento' }
+ */
+function setupTabs(tabs, contentIdMap) {
+    tabs = Array.from(tabs);
+    tabs.forEach(tab => {
+        tab.onclick = () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            Object.entries(contentIdMap).forEach(([tabName, contentId]) => {
+                const el = document.getElementById(contentId);
+                if (el) el.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+        };
+    });
+}
+
+/**
+ * Copia texto para o clipboard e mostra feedback no botão.
+ * @param {HTMLElement} btn - Botão com um <span> filho
+ * @param {string} text - Texto a copiar
+ */
+function copyWithFeedback(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const span = btn.querySelector('span');
+        const original = span.textContent;
+        span.textContent = 'Copiado!';
+        setTimeout(() => span.textContent = original, 2000);
+    });
+}
+
 // ============ APP BOOTSTRAP ============
 function toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark');

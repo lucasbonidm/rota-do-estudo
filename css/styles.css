@@ -108,6 +108,26 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ============ SCROLLABLE UTILITY ============ */
+.scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.scrollable::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
 /* ============ APP LAYOUT ============ */
 .app-layout {
   display: grid;
@@ -124,7 +144,7 @@ body {
   height: 100vh;
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
-  background: var(--sidebar);
+  background: var(--card);
   border-left: 1px solid var(--border);
   overflow: hidden;
   transition:
@@ -160,21 +180,6 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 16px 12px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.sidebar-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-content::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
 }
 
 .shortcuts-hint {
@@ -251,7 +256,7 @@ kbd {
 .search-field input:focus {
   outline: none;
   border-color: var(--ring);
-  box-shadow: 0 0 0 2px hsl(221.2 83.2% 53.3% / 0.15);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent);
 }
 
 /* Remove default search input X on webkit */
@@ -444,28 +449,6 @@ kbd {
   gap: 8px;
 }
 
-.module-accordion-progress-text {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  min-width: 36px;
-  font-variant-numeric: tabular-nums;
-}
-
-.module-accordion-progress-bar {
-  flex: 1;
-  height: 3px;
-  background: var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.module-accordion-progress-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 999px;
-  transition: width 300ms ease;
-}
-
 .module-accordion-chevron {
   display: flex;
   align-items: center;
@@ -488,15 +471,6 @@ kbd {
 
 .module-accordion-item.expanded .module-accordion-lessons {
   display: flex;
-}
-
-.search-group-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 8px 12px 4px;
 }
 
 /* ============ MAIN CONTENT ============ */
@@ -546,21 +520,6 @@ kbd {
   gap: 16px;
   padding: var(--content-padding);
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.video-section::-webkit-scrollbar {
-  width: 6px;
-}
-
-.video-section::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.video-section::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
 }
 
 .video-container,
@@ -1034,21 +993,6 @@ input:focus-visible {
   flex: 1;
   overflow-y: auto;
   padding: 32px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.home-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.home-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.home-content::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
 }
 
 /* ============ COURSE GRID ============ */
@@ -1195,14 +1139,15 @@ input:focus-visible {
 /* ============ SMALL BUTTON ============ */
 .btn-sm {
   height: 30px;
+  width: 30px;
   padding: 0 10px;
   font-size: 12px;
 }
 
 /* ============ ICON BUTTON ============ */
 .btn-icon {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   padding: 0;
 }
 
@@ -1221,29 +1166,6 @@ input:focus-visible {
   background: color-mix(in srgb, var(--destructive) 10%, transparent);
   border-color: var(--destructive);
   color: var(--destructive);
-}
-
-/* ============ ADD SMALL BUTTON ============ */
-.btn-add-small {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.btn-add-small:hover {
-  background: var(--primary);
-  color: var(--primary-foreground);
 }
 
 /* ============ SIDEBAR GROUP LABEL FLEX ============ */
@@ -1476,7 +1398,7 @@ input:focus-visible {
   color: #fff;
 }
 .btn-dialog-primary:hover {
-  background: #2563eb;
+  opacity: 0.9;
 }
 
 .btn-dialog-secondary {
@@ -1546,7 +1468,7 @@ input:focus-visible {
 .form-textarea:focus {
   outline: none;
   border-color: var(--ring);
-  box-shadow: 0 0 0 2px hsl(221.2 83.2% 53.3% / 0.15);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent);
 }
 
 .form-error {
@@ -1706,22 +1628,6 @@ input:focus-visible {
   white-space: pre;
   max-height: 100px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.code-template-code::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.code-template-code::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.code-template-code::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
 }
 
 /* ============ INLINE MODAL TABS ============ */
@@ -1729,39 +1635,6 @@ input:focus-visible {
   display: flex;
   border-bottom: 1px solid var(--border);
   margin: -20px -20px 16px -20px;
-}
-
-.inline-modal-tab {
-  flex: 1;
-  padding: 10px 16px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast);
-}
-
-.inline-modal-tab:hover {
-  color: var(--foreground);
-}
-
-.inline-modal-tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-}
-
-.inline-tab-content {
-  display: none;
-}
-
-.inline-tab-content.active {
-  display: block;
 }
 
 /* ============ EXTENSION PROMO TAB ============ */
@@ -1796,54 +1669,47 @@ input:focus-visible {
 }
 
 /* ============ FOOTER ============ */
-.home-footer {
-  padding: 16px 32px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-  background: var(--card);
-  text-align: center;
-}
-
-.home-footer p {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin: 0;
-}
-
-.home-footer a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: opacity var(--transition-fast);
-}
-
-.home-footer a:hover {
-  opacity: 0.8;
-  text-decoration: underline;
-}
-
+.home-footer,
 .course-footer {
-  padding: 12px 16px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--card);
   text-align: center;
 }
 
+.home-footer p,
 .course-footer p {
-  font-size: 11px;
   color: var(--muted-foreground);
   margin: 0;
 }
 
+.home-footer a,
 .course-footer a {
   color: var(--primary);
   text-decoration: none;
   transition: opacity var(--transition-fast);
 }
 
+.home-footer a:hover,
 .course-footer a:hover {
   opacity: 0.8;
   text-decoration: underline;
+}
+
+.home-footer {
+  padding: 16px 32px;
+}
+
+.home-footer p {
+  font-size: 12px;
+}
+
+.course-footer {
+  padding: 12px 16px;
+}
+
+.course-footer p {
+  font-size: 11px;
 }
 
 /* ============ COURSE EDITOR VIEW ============ */
@@ -1873,14 +1739,6 @@ input:focus-visible {
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
-}
-
-.editor-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted-foreground);
-  margin-bottom: 8px;
 }
 
 .editor-course-name {

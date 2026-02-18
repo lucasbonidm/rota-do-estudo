@@ -246,14 +246,10 @@ const HomeView = {
 
         // Tab switching
         const tabs = overlay.querySelectorAll('.modal-tab');
-        tabs.forEach(tab => {
-            tab.onclick = () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById('tabManual').classList.toggle('active', tab.dataset.tab === 'manual');
-                document.getElementById('tabImport').classList.toggle('active', tab.dataset.tab === 'import');
-                document.getElementById('tabExtension').classList.toggle('active', tab.dataset.tab === 'extension');
-            };
+        setupTabs(tabs, {
+            manual: 'tabManual',
+            import: 'tabImport',
+            extension: 'tabExtension'
         });
 
         // Close
@@ -312,13 +308,7 @@ const HomeView = {
         // Copy script button
         const copyBtn = document.getElementById('copyCourseScript');
         if (copyBtn) {
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(COURSE_IMPORT_SCRIPT).then(() => {
-                    const span = copyBtn.querySelector('span');
-                    span.textContent = 'Copiado!';
-                    setTimeout(() => span.textContent = 'Copiar', 2000);
-                });
-            };
+            copyBtn.onclick = () => copyWithFeedback(copyBtn, COURSE_IMPORT_SCRIPT);
         }
 
         setTimeout(() => document.getElementById('courseTitleInput').focus(), 50);

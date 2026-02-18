@@ -238,9 +238,9 @@ const CourseView = {
                     <div class="module-accordion-info">
                         <div class="module-accordion-label">${mod.title}</div>
                         <div class="module-accordion-meta">
-                            <span class="module-accordion-progress-text">${progress.completed}/${progress.total}</span>
-                            <div class="module-accordion-progress-bar">
-                                <div class="module-accordion-progress-fill" style="width: ${progress.percentage}%"></div>
+                            <span class="module-progress-text">${progress.completed}/${progress.total}</span>
+                            <div class="module-progress-bar">
+                                <div class="module-progress-fill" style="width: ${progress.percentage}%"></div>
                             </div>
                         </div>
                     </div>
@@ -257,19 +257,7 @@ const CourseView = {
 
             const lessonsContainer = item.querySelector('.module-accordion-lessons');
             mod.lessons.forEach(lesson => {
-                const lessonEl = document.createElement('div');
-                lessonEl.className = 'lesson-item'
-                    + (lesson.completed ? ' completed' : '')
-                    + (this.state.currentLessonId === lesson.id ? ' active' : '');
-                lessonEl.setAttribute('data-lesson-id', lesson.id);
-                lessonEl.setAttribute('role', 'button');
-                lessonEl.setAttribute('tabindex', '0');
-                lessonEl.innerHTML = `<span class="lesson-title">${lesson.title}</span>`;
-                lessonEl.addEventListener('click', () => {
-                    this.state.currentModuleId = mod.id;
-                    this._loadLesson(lesson, mod);
-                });
-                lessonsContainer.appendChild(lessonEl);
+                lessonsContainer.appendChild(this._createLessonItem(lesson, mod));
             });
 
             nav.appendChild(item);
@@ -298,25 +286,14 @@ const CourseView = {
             totalMatches += matches.length;
 
             const groupLabel = document.createElement('div');
-            groupLabel.className = 'search-group-label';
+            groupLabel.className = 'sidebar-group-label';
             groupLabel.textContent = mod.title;
             nav.appendChild(groupLabel);
 
             matches.forEach(lesson => {
-                const item = document.createElement('div');
-                item.className = 'lesson-item'
-                    + (lesson.completed ? ' completed' : '')
-                    + (this.state.currentLessonId === lesson.id ? ' active' : '');
-                item.setAttribute('data-lesson-id', lesson.id);
-                item.setAttribute('role', 'button');
-                item.setAttribute('tabindex', '0');
-                item.innerHTML = `<span class="lesson-title">${lesson.title}</span>`;
-                item.addEventListener('click', () => {
-                    this.state.currentModuleId = mod.id;
+                nav.appendChild(this._createLessonItem(lesson, mod, () => {
                     this.state.expandedModules.add(mod.id);
-                    this._loadLesson(lesson, mod);
-                });
-                nav.appendChild(item);
+                }));
             });
         });
 
@@ -340,8 +317,8 @@ const CourseView = {
             const accordionItem = document.querySelector(`.module-accordion-item[data-module-id="${mod.id}"]`);
             if (!accordionItem) return;
             const progress = Store.getModuleProgress(this.state.courseData, mod.id);
-            const progressText = accordionItem.querySelector('.module-accordion-progress-text');
-            const progressFill = accordionItem.querySelector('.module-accordion-progress-fill');
+            const progressText = accordionItem.querySelector('.module-progress-text');
+            const progressFill = accordionItem.querySelector('.module-progress-fill');
             if (progressText) progressText.textContent = `${progress.completed}/${progress.total}`;
             if (progressFill) progressFill.style.width = `${progress.percentage}%`;
         });
@@ -659,6 +636,23 @@ const CourseView = {
     },
 
     // ============ HELPERS ============
+    _createLessonItem(lesson, mod, onClickExtra) {
+        const el = document.createElement('div');
+        el.className = 'lesson-item'
+            + (lesson.completed ? ' completed' : '')
+            + (this.state.currentLessonId === lesson.id ? ' active' : '');
+        el.setAttribute('data-lesson-id', lesson.id);
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+        el.innerHTML = `<span class="lesson-title">${lesson.title}</span>`;
+        el.addEventListener('click', () => {
+            this.state.currentModuleId = mod.id;
+            if (onClickExtra) onClickExtra();
+            this._loadLesson(lesson, mod);
+        });
+        return el;
+    },
+
     _findLessonById(lessonId) {
         for (const mod of this.state.courseData.modules) {
             const lesson = mod.lessons.find(l => l.id === lessonId);

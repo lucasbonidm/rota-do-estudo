@@ -64,7 +64,7 @@ const CourseEditorView = {
 
                     <!-- Course Name -->
                     <div class="editor-section">
-                        <label class="editor-label" for="editorCourseName">Nome do Curso</label>
+                        <label class="form-label" for="editorCourseName">Nome do Curso</label>
                         <input type="text" id="editorCourseName" class="form-input editor-course-name" value="${course.title}" autocomplete="off">
                     </div>
 
@@ -302,25 +302,25 @@ const CourseEditorView = {
     handleAddModule() {
         this._openInlineModal('Adicionar Módulo', `
             <div class="inline-modal-tabs">
-                <button class="inline-modal-tab active" data-tab="manual">Manual</button>
-                <button class="inline-modal-tab" data-tab="import">Importar JSON</button>
-                <button class="inline-modal-tab" data-tab="extension">Usar Extensão</button>
+                <button class="modal-tab active" data-tab="manual">Manual</button>
+                <button class="modal-tab" data-tab="import">Importar JSON</button>
+                <button class="modal-tab" data-tab="extension">Usar Extensão</button>
             </div>
-            <div id="inlineTabManual" class="inline-tab-content active">
+            <div id="inlineTabManual" class="tab-content active">
                 <label class="form-label" for="newModuleTitle">Nome do módulo</label>
                 <input id="newModuleTitle" type="text" class="form-input" placeholder="Ex: Módulo 6 - Avançado" autocomplete="off">
                 <label class="form-label" for="newModuleDesc" style="margin-top:12px">Descrição (opcional)</label>
                 <input id="newModuleDesc" type="text" class="form-input" placeholder="Descrição do módulo" autocomplete="off">
                 <button id="confirmAddModule" class="btn btn-primary modal-action">Adicionar</button>
             </div>
-            <div id="inlineTabExtension" class="inline-tab-content">
+            <div id="inlineTabExtension" class="tab-content">
                 <div class="extension-promo">
                     <img src="docs/screenshots/Rota%20do%20Estudo.png" alt="Extensão Rota do Estudo" class="extension-screenshot">
                     <p class="extension-promo-desc">Com a extensão do Chrome, importe playlists do YouTube diretamente, sem precisar do Console DevTools.</p>
                     <a href="https://chromewebstore.google.com/detail/rota-do-estudo/begpmhbipnpefoagmeblnphcegoclbco" target="_blank" rel="noopener noreferrer" class="btn btn-primary extension-install-btn">Instalar Extensão no Chrome</a>
                 </div>
             </div>
-            <div id="inlineTabImport" class="inline-tab-content">
+            <div id="inlineTabImport" class="tab-content">
                 <div class="import-help">
                     <p class="import-help-title">Como obter o JSON da playlist:</p>
                     <ol class="import-steps">
@@ -339,7 +339,7 @@ const CourseEditorView = {
                                 <span>Copiar</span>
                             </button>
                         </div>
-                        <pre class="code-template-code" id="moduleScriptCode"></pre>
+                        <pre class="code-template-code scrollable" id="moduleScriptCode"></pre>
                     </div>
                 </div>
                 <label class="form-label" for="importModuleJson" style="margin-top:16px">Cole o JSON gerado aqui</label>
@@ -349,14 +349,10 @@ const CourseEditorView = {
             </div>
         `, () => {
             // Tab switching
-            document.querySelectorAll('.inline-modal-tab').forEach(tab => {
-                tab.onclick = () => {
-                    document.querySelectorAll('.inline-modal-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.getElementById('inlineTabManual').classList.toggle('active', tab.dataset.tab === 'manual');
-                    document.getElementById('inlineTabImport').classList.toggle('active', tab.dataset.tab === 'import');
-                    document.getElementById('inlineTabExtension').classList.toggle('active', tab.dataset.tab === 'extension');
-                };
+            setupTabs(document.querySelectorAll('#inlineModalBody .modal-tab'), {
+                manual: 'inlineTabManual',
+                import: 'inlineTabImport',
+                extension: 'inlineTabExtension'
             });
 
             // Manual add
@@ -380,13 +376,7 @@ const CourseEditorView = {
             // Copy script button
             const copyBtn = document.getElementById('copyModuleScript');
             if (copyBtn) {
-                copyBtn.onclick = () => {
-                    navigator.clipboard.writeText(MODULE_IMPORT_SCRIPT).then(() => {
-                        const span = copyBtn.querySelector('span');
-                        span.textContent = 'Copiado!';
-                        setTimeout(() => span.textContent = 'Copiar', 2000);
-                    });
-                };
+                copyBtn.onclick = () => copyWithFeedback(copyBtn, MODULE_IMPORT_SCRIPT);
             }
 
             // Import module
@@ -458,17 +448,17 @@ const CourseEditorView = {
     handleAddLesson(moduleId) {
         this._openInlineModal('Adicionar Aula', `
             <div class="inline-modal-tabs">
-                <button class="inline-modal-tab active" data-tab="manual">Manual</button>
-                <button class="inline-modal-tab" data-tab="extension">Usar Extensão</button>
+                <button class="modal-tab active" data-tab="manual">Manual</button>
+                <button class="modal-tab" data-tab="extension">Usar Extensão</button>
             </div>
-            <div id="inlineLessonTabManual" class="inline-tab-content active">
+            <div id="inlineLessonTabManual" class="tab-content active">
                 <label class="form-label" for="newLessonTitle">Título da aula</label>
                 <input id="newLessonTitle" type="text" class="form-input" placeholder="Ex: Introdução ao Flexbox" autocomplete="off">
                 <label class="form-label" for="newLessonUrl" style="margin-top:12px">URL do YouTube</label>
                 <input id="newLessonUrl" type="url" class="form-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
                 <button id="confirmAddLesson" class="btn btn-primary modal-action">Adicionar</button>
             </div>
-            <div id="inlineLessonTabExtension" class="inline-tab-content">
+            <div id="inlineLessonTabExtension" class="tab-content">
                 <div class="extension-promo">
                     <img src="docs/screenshots/Rota%20do%20Estudo.png" alt="Extensão Rota do Estudo" class="extension-screenshot">
                     <p class="extension-promo-desc">Com a extensão do Chrome, importe playlists do YouTube diretamente, sem precisar do Console DevTools.</p>
@@ -477,13 +467,9 @@ const CourseEditorView = {
             </div>
         `, () => {
             // Tab switching
-            document.querySelectorAll('.inline-modal-tab').forEach(tab => {
-                tab.onclick = () => {
-                    document.querySelectorAll('.inline-modal-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.getElementById('inlineLessonTabManual').classList.toggle('active', tab.dataset.tab === 'manual');
-                    document.getElementById('inlineLessonTabExtension').classList.toggle('active', tab.dataset.tab === 'extension');
-                };
+            setupTabs(document.querySelectorAll('#inlineModalBody .modal-tab'), {
+                manual: 'inlineLessonTabManual',
+                extension: 'inlineLessonTabExtension'
             });
 
             document.getElementById('confirmAddLesson').addEventListener('click', () => {
